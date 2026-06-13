@@ -21,7 +21,7 @@ Uygulama Python konsolu veya `.bat` dosyasi gostermeden Windows sistem tepsisind
 - Yonetim paneli, serial izleme, loglar ve sistem ekrani ayri kisayollardan acilir.
 - Servis beklenmedik sekilde kapanirsa masaustu uygulamasi durumu bildirir ve bir kez otomatik yeniden baslatmayi dener.
 - **Servisi Yeniden Baslat** islemi arka planda calisir; tepsi menusu donmaz.
-- **Tanilama Raporu Olustur** secenegi surum, servis sagligi, dosya yollari, COM portlari ve profil ayarlarini tek metin dosyasinda toplar.
+- **Tanilama Raporu Olustur** secenegi surum, servis sagligi, dosya yollari, COM portlari ve kantar ayarlarini tek metin dosyasinda toplar.
 - Ayni kullanici oturumunda yalnizca bir Kantar Servisi tepsi uygulamasi calisir. Ikinci acilis mevcut servisin panelini acar.
 - Windows acilisinda calistirma ve masaustu kisayolu kurulum ekranindan secilebilir.
 
@@ -33,24 +33,25 @@ Varsayilan servis adresi `http://127.0.0.1`:
 
 | Islem | Adres |
 | --- | --- |
-| Tekli kantar | `http://127.0.0.1/` |
-| Kantar 1 | `http://127.0.0.1/?profil=kantar1` |
-| Kantar 2 | `http://127.0.0.1/?profil=kantar2` |
-| JSON agirlik API | `http://127.0.0.1/api/v1/agirlik?profil=kantar1` |
+| Varsayilan kantar | `http://127.0.0.1/` |
+| Belirli kantar | `http://127.0.0.1/?kantar=KANTAR_KIMLIGI` |
+| JSON agirlik API | `http://127.0.0.1/api/v1/agirlik?kantar=KANTAR_KIMLIGI` |
+| Kantar listesi API | `http://127.0.0.1/api/v1/kantarlar` |
 | Ayarlar | `http://127.0.0.1/ayarlar` |
 | Serial izleme | `http://127.0.0.1/serial` |
 | Loglar | `http://127.0.0.1/loglar` |
 | Surum ve guncelleme | `http://127.0.0.1/sistem` |
 | Saglik kontrolu | `http://127.0.0.1/saglik` |
 
-Duz metin `/` endpointi mevcut entegrasyonlarla uyumluluk icin korunur. Yeni entegrasyonlarda durum kodu, profil, agirlik ve hata alanlarini birlikte sunan `/api/v1/agirlik` endpointi tercih edilmelidir.
+Duz metin `/` endpointi mevcut entegrasyonlarla uyumluluk icin korunur. Yeni entegrasyonlarda durum kodu, kantar kimligi, kantar adi, agirlik ve hata alanlarini birlikte sunan `/api/v1/agirlik` endpointi tercih edilmelidir. Kantar kimlikleri yonetim panelinden kantar eklendiginde otomatik uretilir ve `/api/v1/kantarlar` endpointinden okunabilir.
 
 Basarili JSON yaniti:
 
 ```json
 {
   "ok": true,
-  "profil": "kantar1",
+  "kantar": "kantar-0123456789abcdef0123456789abcdef",
+  "kantar_adi": "Giris Kantari",
   "agirlik": "125",
   "zaman": "2026-06-13T14:30:00"
 }
@@ -78,7 +79,7 @@ Ayarlar ve loglar uygulama kurulum klasorunden ayri tutulur:
 
 Eski `C:\kantar\kantar-ayarlar.sqlite` dosyasi varsa ilk calistirmada otomatik olarak yeni konuma kopyalanir. Guncelleme ve kaldirma islemleri kullanici ayarlarini silmez.
 
-Seri port, baud hizi ve veri ayiklama ayarlari profil bazindadir. Servis host ve port ayarlari ise calisan HTTP sunucusu tek oldugu icin tum profillerde ortaktir.
+Yeni kurulum ilk acilista bos kantar listesiyle baslar. Yonetim panelindeki **Kantar Ekle** alaniyla ihtiyac kadar kantar eklenebilir. Seri port, baud hizi ve veri ayiklama ayarlari kantar bazindadir. Servis host ve port ayarlari ise calisan HTTP sunucusu tek oldugu icin tum kantarlarda ortaktir.
 
 Ortam degiskenleri:
 
@@ -89,7 +90,9 @@ Ortam degiskenleri:
 | `KANTAR_LOG_DOSYA` | Log dosyasini dogrudan belirler |
 | `KANTAR_SERVIS_HOST` | Kayitli host ayarini gecici olarak ezer |
 | `KANTAR_SERVIS_PORT` | Kayitli port ayarini gecici olarak ezer |
-| `KANTAR_AYAR_PROFILI` | Varsayilan kantar profilini belirler |
+| `KANTAR_AYAR_KANTARI` | Varsayilan kantar kimligini belirler |
+
+Eski `KANTAR_AYAR_PROFILI` degiskeni ve `profil` URL parametresi geriye donuk uyumluluk icin okunmaya devam eder.
 
 ## Gelistirme
 

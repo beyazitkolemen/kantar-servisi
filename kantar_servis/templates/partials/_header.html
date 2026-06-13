@@ -3,8 +3,8 @@
   <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
     <div>
       <h1 class="text-2xl font-bold sm:text-3xl">LİSDEP - Kantar Servisi</h1>
-      <p class="mt-2 max-w-2xl text-sm text-blue-50">Ayar, serial izleme ve log yönetimi tek panelde toplanır. Okuma yapılacak kantar profili URL'deki <code class="rounded bg-white/15 px-1">profil</code> parametresiyle seçilir.</p>
+      <p class="mt-2 max-w-2xl text-sm text-blue-50">Kantar ekleme, seri port ayarlari, canli izleme ve log yonetimi tek panelde toplanir.</p>
     </div>
-    <span class="inline-flex w-fit rounded-full bg-white/15 px-3 py-1 text-sm font-semibold">Aktif profil: {{ profil }}</span>
+    <span class="inline-flex w-fit rounded-full bg-white/15 px-3 py-1 text-sm font-semibold">{% if kantar %}Aktif kantar: {{ kantar.ad }}{% elif kantarlar %}Kantar secilmedi{% else %}Kantar eklenmedi{% endif %}</span>
   </div>
 </div>

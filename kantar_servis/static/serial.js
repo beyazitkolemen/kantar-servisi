@@ -44,7 +44,7 @@
   }
 
   function urlParametreleri() {
-    return "profil=" + encodeURIComponent(document.getElementById("profil").value) +
+    return "kantar=" + encodeURIComponent(document.getElementById("kantar").value) +
       "&port=" + encodeURIComponent(portSelect.value);
   }
 

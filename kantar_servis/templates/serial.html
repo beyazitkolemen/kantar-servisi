@@ -1,11 +1,26 @@
 {% extends 'base.html' %}
 {% block title %}LİSDEP - Kantar Servisi | Serial İzleme{% endblock %}
 {% block content %}
+  {% if not kantar %}
+    <div class="p-8 text-center">
+      <div class="rounded-xl border border-dashed border-blue-300 bg-blue-50 p-8">
+        {% if kantarlar %}
+          <h2 class="text-lg font-bold text-slate-900">Kantar bulunamadi</h2>
+          <p class="mt-2 text-sm text-slate-600">Izlemek istediginiz kantari Kantarlar ekranindan yeniden secin.</p>
+          <a href="/ayarlar" class="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Kantar Sec</a>
+        {% else %}
+          <h2 class="text-lg font-bold text-slate-900">Izlenecek kantar yok</h2>
+          <p class="mt-2 text-sm text-slate-600">Serial izlemeyi kullanmadan once bir kantar ekleyin.</p>
+          <a href="/ayarlar" class="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Kantar Ekle</a>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
   <div class="grid gap-6 p-5 sm:p-8 xl:grid-cols-[1fr_340px]">
     <div class="space-y-5">
       <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <form id="serial-form" class="grid gap-4 lg:grid-cols-4">
-          <input type="hidden" id="profil" value="{{ profil }}">
+          <input type="hidden" id="kantar" value="{{ kantar_id }}">
           <div>
             <label class="{{ label_class }}" for="port">COM Port</label>
             <select id="port" class="{{ input_class }}">
@@ -69,7 +84,8 @@
       {% include 'partials/_usage_addresses.html' %}
     </aside>
   </div>
+  {% endif %}
 {% endblock %}
 {% block scripts %}
-<script src="{{ url_for('static', filename='serial.js') }}" defer></script>
+{% if kantar %}<script src="{{ url_for('static', filename='serial.js') }}" defer></script>{% endif %}
 {% endblock %}

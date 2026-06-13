@@ -4,7 +4,7 @@
     name="LISDEP.KantarServisi"
     processorArchitecture="*"
     type="win32"
-    version="1.0.0.0"
+    version="0.0.0.0"
   />
   <description>LISDEP Kantar Servisi</description>
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">

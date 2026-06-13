@@ -1,6 +1,10 @@
 <form method="post" action="/ayarlar" class="space-y-5">
-  <input type="hidden" name="profil" value="{{ profil }}">
+  <input type="hidden" name="kantar" value="{{ kantar_id }}">
   <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+  <div>
+    <label class="{{ label_class }}" for="kantar-adi">Kantar Adi</label>
+    <input class="{{ input_class }}" id="kantar-adi" name="kantar_adi" type="text" maxlength="80" value="{{ kantar.ad }}" required>
+  </div>
   <div class="grid gap-4 sm:grid-cols-2">
     {% for alan in alanlar %}
       <div>
@@ -15,7 +19,7 @@
         {% else %}
           <input class="{{ input_class }}" id="{{ alan.anahtar }}" name="{{ alan.anahtar }}" type="{{ alan.tip }}" value="{{ alan.deger }}" required{% for ad, deger in alan.ozellikler.items() %} {{ ad }}="{{ deger }}"{% endfor %}>
           {% if alan.global_ayar %}
-            <p class="mt-1 text-xs text-slate-500">Bu servis ayari tum kantar profilleri icin ortaktir.</p>
+            <p class="mt-1 text-xs text-slate-500">Bu servis ayari eklenen tum kantarlar icin ortaktir.</p>
           {% endif %}
         {% endif %}
       </div>

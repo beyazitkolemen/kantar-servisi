@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -102,10 +103,24 @@ def write_python_path():
     )
 
 
+def write_app_manifest(version):
+    source = ROOT / "packaging" / "windows" / "app.manifest"
+    target = BUILD_DIR / "app.manifest"
+    content = source.read_text(encoding="utf-8")
+    content = re.sub(
+        r'version="[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"',
+        'version="%s"' % version4(version),
+        content,
+        count=1,
+    )
+    target.write_text(content, encoding="utf-8")
+    return target
+
+
 def write_launcher_resource(version):
     resource = BUILD_DIR / "launcher.rc"
     icon = (ASSETS_DIR / "app.ico").as_posix()
-    manifest = (ROOT / "packaging" / "windows" / "app.manifest").as_posix()
+    manifest = write_app_manifest(version).as_posix()
     numeric_version = ",".join(version4(version).split("."))
     resource.write_text(
         """#include <windows.h>

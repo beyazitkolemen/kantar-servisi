@@ -25,12 +25,9 @@ from .config import (
     AYAR_ALANLARI,
     AYAR_GIRIS_OZELLIKLERI,
     GITHUB_REPO_URL,
-    PROFILLER,
     STATIC_KLASOR,
     TEMPLATE_KLASOR,
     log_dosya_yolu,
-    profil_normalize,
-    secili_profil,
     servis_hostu,
     servis_portu,
     uygulama_veri_dizini,
@@ -39,7 +36,16 @@ from .config import (
 from .errors import AyarDogrulamaHatasi, KantarHatasi
 from .logging_utils import gunluge_yaz, log_dosya_bilgisi, loglari_oku, loglari_temizle
 from .serial_bridge import kantar_degerini_oku, serial_ham_veri_oku, seri_port_bilgileri, seri_port_secenekleri, seri_portlari_listele
-from .storage import ayarlari_baslat, ayarlari_kaydet, ayarlari_oku, sqlite_durumu_oku
+from .storage import (
+    ayarlari_baslat,
+    ayarlari_kaydet,
+    ayarlari_oku,
+    kantar_ekle,
+    kantar_sec,
+    kantar_sil,
+    kantarlari_listele,
+    sqlite_durumu_oku,
+)
 from .updates import son_surumu_kontrol_et
 
 CSRF_TOKEN = secrets.token_urlsafe(32)
@@ -63,10 +69,27 @@ def create_app():
 app = None
 
 
-def istek_profili():
+def istek_kantari():
     if request is None:
-        return secili_profil()
-    return profil_normalize(request.values.get("profil"), secili_profil())
+        return kantar_sec()
+    return kantar_sec(istek_kantar_degeri())
+
+
+def istek_kantar_degeri():
+    if request is None:
+        return ""
+    return str(request.values.get("kantar") or request.values.get("profil") or "").strip()
+
+
+def kantar_bulunamadi_cevabi():
+    if istek_kantar_degeri():
+        return "Istenen kantar bulunamadi.", 404
+    return "Henuz kantar eklenmedi. Yonetim panelinden bir kantar ekleyin.", 409
+
+
+def istek_kantar_id():
+    kantar = istek_kantari()
+    return kantar["id"] if kantar else ""
 
 
 def serial_port_parametresi():
@@ -167,14 +190,17 @@ def dosya_indirme_cevabi(metin, dosya_adi):
     return cevap
 
 
-def ortak_template_context(aktif_sayfa, profil=None):
-    if profil is None:
-        profil = secili_profil()
-    ayarlar = ayarlari_oku(profil)
+def ortak_template_context(aktif_sayfa, kantar=None):
+    if kantar is None:
+        kantar = istek_kantari()
+    kantar_id = kantar["id"] if kantar else ""
+    ayarlar = ayarlari_oku(kantar_id)
     return {
         "aktif_sayfa": aktif_sayfa,
-        "profil": profil,
-        "profiller": PROFILLER,
+        "kantar": kantar,
+        "kantar_id": kantar_id,
+        "kantarlar": kantarlari_listele(),
+        "kantar_parametresi": ("?kantar=%s" % kantar_id) if kantar_id else "",
         "csrf_token": CSRF_TOKEN,
         "servis_url": yerel_servis_url(ayarlar),
         "input_class": "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
@@ -204,16 +230,16 @@ def sorun_giderme_maddeleri():
         {"baslik": "COM port listede gorunmuyor", "aciklama": "USB/RS232 donusturucuyu tekrar takin, Windows Aygit Yoneticisi'nde portu kontrol edin ve surucu kurulumunun tamamlandigindan emin olun."},
         {"baslik": "Port kullanimda hatasi", "aciklama": "Ayni COM portu kullanan diger kantar programlarini kapatin. Gerekirse servisi kapatip tekrar baslatin."},
         {"baslik": "SQLite ayari kaydedilemiyor", "aciklama": "Sistem sayfasindaki yerel veri klasorunun yazilabilir oldugunu kontrol edin ve uygulamayi yeniden baslatin."},
-        {"baslik": "Ayarlar sayfasi acilmiyor", "aciklama": "Kantar servisi calisiyor mu kontrol edin. Tek servis adresi http://127.0.0.1/ayarlar seklindedir; Kantar 2 icin port degil ?profil=kantar2 parametresi kullanilir."},
+        {"baslik": "Ayarlar sayfasi acilmiyor", "aciklama": "Kantar servisi calisiyor mu kontrol edin. Kantarlar tek panelden eklenir ve her kantarin ayri bir kimligi bulunur."},
         {"baslik": "Program dosyasi eksik", "aciklama": "GitHub deposundaki downloads klasorunden son Windows kurulum dosyasini indirip uygulamayi yeniden kurun. Ayarlariniz korunur."},
     ]
 
 
-def ayar_formu_html(profil, ayarlar, mesaj=None, hatalar=None):
+def ayar_formu_html(kantar, ayarlar, mesaj=None, hatalar=None):
     if render_template is None:
         return "Kantar ayarlari sayfasi icin Flask render_template kullanilamadi. Flask paketini kontrol edin."
     portlar = seri_portlari_listele()
-    context = ortak_template_context("ayarlar", profil)
+    context = ortak_template_context("ayarlar", kantar)
     context.update({
         "mesaj": mesaj,
         "hatalar": hatalar or [],
@@ -240,20 +266,34 @@ def register_routes(flask_app):
         return
 
     def agirlik_oku():
-        profil = istek_profili()
+        kantar = istek_kantari()
+        if not kantar:
+            hata, durum = kantar_bulunamadi_cevabi()
+            return {
+                "ok": False,
+                "kantar": None,
+                "profil": None,
+                "hata": hata,
+            }, durum
         try:
-            return {"ok": True, "profil": profil, "agirlik": kantar_degerini_oku(profil)}, 200
+            return {
+                "ok": True,
+                "kantar": kantar["id"],
+                "kantar_adi": kantar["ad"],
+                "profil": kantar["id"],
+                "agirlik": kantar_degerini_oku(kantar["id"]),
+            }, 200
         except KantarHatasi as hata:
             mesaj = hata.kullanici_mesaji()
             gunluge_yaz(mesaj)
-            return {"ok": False, "profil": profil, "hata": mesaj}, 503
+            return {"ok": False, "kantar": kantar["id"], "profil": kantar["id"], "hata": mesaj}, 503
         except Exception as hata:
             mesaj = KantarHatasi("Beklenmeyen bir hata olustu.", [
                 "Servis loglarini kontrol edin.",
                 "Kantar Servisi uygulamasini yeniden baslatin.",
             ], str(hata)).kullanici_mesaji()
             gunluge_yaz(mesaj)
-            return {"ok": False, "profil": profil, "hata": mesaj}, 500
+            return {"ok": False, "kantar": kantar["id"], "profil": kantar["id"], "hata": mesaj}, 500
 
     @flask_app.route("/", methods=["GET", "OPTIONS"])
     def kantar_degeri():
@@ -272,38 +312,72 @@ def register_routes(flask_app):
 
     @flask_app.route("/saglik")
     def saglik():
+        kantar = istek_kantari()
         return json_cevabi({
             "ok": True,
             "uygulama": "Kantar Servisi",
             "durum": "hazir",
             "surum": __version__,
-            "profil": istek_profili(),
+            "kantar": kantar["id"] if kantar else None,
+            "kantar_sayisi": len(kantarlari_listele()),
         })
+
+    @flask_app.route("/api/v1/kantarlar")
+    def kantarlar_api():
+        return json_cevabi({"ok": True, "kantarlar": kantarlari_listele()})
+
+    @flask_app.route("/kantarlar/ekle", methods=["POST"])
+    def kantar_ekle_sayfasi():
+        if not csrf_gecerli_mi():
+            return json_cevabi({"ok": False, "hata": "Form guvenlik dogrulamasi basarisiz."}, 403)
+        try:
+            kantar_id = kantar_ekle(request.form.get("kantar_adi"))
+        except ValueError as hata:
+            return html_cevabi(
+                ayar_formu_html(istek_kantari(), ayarlari_oku(), hatalar=[str(hata)]),
+                400,
+            )
+        return redirect("/ayarlar?kantar=%s&mesaj=Kantar eklendi" % kantar_id)
+
+    @flask_app.route("/kantarlar/<kantar_id>/sil", methods=["POST"])
+    def kantar_sil_sayfasi(kantar_id):
+        if not csrf_gecerli_mi():
+            return json_cevabi({"ok": False, "hata": "Form guvenlik dogrulamasi basarisiz."}, 403)
+        kantar_sil(kantar_id)
+        return redirect("/ayarlar?mesaj=Kantar silindi")
 
     @flask_app.route("/ayarlar", methods=["GET", "POST"])
     def ayarlar_sayfasi():
-        profil = istek_profili()
-        mesaj = None
+        kantar = istek_kantari()
+        kantar_id = kantar["id"] if kantar else ""
+        mesaj = request.values.get("mesaj", "")
+        hatalar = ["Istenen kantar bulunamadi."] if istek_kantar_degeri() and not kantar else []
         if request.method == "POST":
             if not csrf_gecerli_mi():
                 return html_cevabi(
-                    ayar_formu_html(profil, form_ayarlari_al(request.form), hatalar=["Form guvenlik dogrulamasi basarisiz. Sayfayi yenileyip tekrar deneyin."]),
+                    ayar_formu_html(kantar, form_ayarlari_al(request.form), hatalar=["Form guvenlik dogrulamasi basarisiz. Sayfayi yenileyip tekrar deneyin."]),
                     403,
                 )
+            if not kantar:
+                return html_cevabi(ayar_formu_html(None, ayarlari_oku(), hatalar=["Once bir kantar ekleyin."]), 400)
             form_ayarlari = form_ayarlari_al(request.form)
             try:
-                ayarlari_kaydet(profil, form_ayarlari)
+                ayarlari_kaydet(kantar_id, form_ayarlari, request.form.get("kantar_adi"))
             except AyarDogrulamaHatasi as hata:
-                return html_cevabi(ayar_formu_html(profil, form_ayarlari, hatalar=hata.hatalar), 400)
+                return html_cevabi(ayar_formu_html(kantar, form_ayarlari, hatalar=hata.hatalar), 400)
+            except ValueError as hata:
+                return html_cevabi(ayar_formu_html(kantar, form_ayarlari, hatalar=[str(hata)]), 400)
             mesaj = "Ayarlar kaydedildi. Servis host veya port degistiyse servisi yeniden baslatin."
-        return html_cevabi(ayar_formu_html(profil, ayarlari_oku(profil), mesaj))
+            kantar = kantar_sec(kantar_id)
+        return html_cevabi(ayar_formu_html(kantar, ayarlari_oku(kantar_id), mesaj, hatalar))
 
     @flask_app.route("/serial")
     def serial_sayfasi():
-        profil = istek_profili()
+        kantar = istek_kantari()
+        kantar_id = kantar["id"] if kantar else ""
         portlar = seri_portlari_listele()
-        secili_port = serial_port_parametresi() or ayarlari_oku(profil).get("seri_port", "COM2")
-        context = ortak_template_context("serial", profil)
+        secili_port = serial_port_parametresi() or ayarlari_oku(kantar_id).get("seri_port", "COM2")
+        context = ortak_template_context("serial", kantar)
         context.update({
             "portlar": seri_port_bilgileri(portlar),
             "port_secenekleri": seri_port_secenekleri(secili_port, portlar),
@@ -313,9 +387,12 @@ def register_routes(flask_app):
 
     @flask_app.route("/serial/veri")
     def serial_veri():
-        profil = istek_profili()
+        kantar_id = istek_kantar_id()
+        if not kantar_id:
+            hata, durum = kantar_bulunamadi_cevabi()
+            return json_cevabi({"ok": False, "hata": hata, "zaman": time.strftime("%H:%M:%S")}, durum)
         try:
-            return json_cevabi(serial_ham_veri_oku(profil, serial_port_parametresi()))
+            return json_cevabi(serial_ham_veri_oku(kantar_id, serial_port_parametresi()))
         except KantarHatasi as hata:
             gunluge_yaz(hata.kullanici_mesaji())
             return json_cevabi({"ok": False, "hata": hata.kullanici_mesaji(), "zaman": time.strftime("%H:%M:%S")}, 500)
@@ -326,12 +403,13 @@ def register_routes(flask_app):
 
     @flask_app.route("/serial/portlar")
     def serial_portlar():
-        profil = istek_profili()
-        secili_port = serial_port_parametresi() or ayarlari_oku(profil).get("seri_port", "COM2")
+        kantar = istek_kantari()
+        kantar_id = kantar["id"] if kantar else ""
+        secili_port = serial_port_parametresi() or ayarlari_oku(kantar_id).get("seri_port", "COM2")
         portlar = seri_portlari_listele()
         return json_cevabi({
             "ok": True,
-            "profil": profil,
+            "kantar": kantar_id or None,
             "secili_port": secili_port,
             "portlar": seri_port_bilgileri(portlar),
             "port_secenekleri": seri_port_secenekleri(secili_port, portlar),
@@ -340,7 +418,7 @@ def register_routes(flask_app):
 
     @flask_app.route("/loglar")
     def loglar_sayfasi():
-        context = ortak_template_context("loglar", istek_profili())
+        context = ortak_template_context("loglar", istek_kantari())
         context.update({
             "loglar": loglari_oku(),
             "log_dosya_yolu": log_dosya_yolu(),
@@ -377,11 +455,13 @@ def register_routes(flask_app):
         gunluge_yaz("Log temizleme islemi tamamlandi. Silinen dosya sayisi: %s" % silinen)
         if redirect is None:
             return json_cevabi({"ok": True, "silinen": silinen})
-        return redirect("/loglar?profil=%s&mesaj=Loglar temizlendi" % istek_profili())
+        kantar_id = istek_kantar_id()
+        ek = "&kantar=%s" % kantar_id if kantar_id else ""
+        return redirect("/loglar?mesaj=Loglar temizlendi%s" % ek)
 
     @flask_app.route("/sistem")
     def sistem_sayfasi():
-        context = ortak_template_context("sistem", istek_profili())
+        context = ortak_template_context("sistem", istek_kantari())
         context.update({
             "guncelleme": son_surumu_kontrol_et(zorla=request.args.get("yenile") == "1"),
             "github_repo_url": GITHUB_REPO_URL,

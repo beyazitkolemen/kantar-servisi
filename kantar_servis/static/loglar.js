@@ -1,7 +1,6 @@
 (function () {
   "use strict";
 
-  var profil = document.getElementById("log-profil").value;
   var logAlani = document.getElementById("loglar");
   var istekSuruyor = false;
 
@@ -10,7 +9,7 @@
       return;
     }
     istekSuruyor = true;
-    fetch("/loglar/veri?profil=" + encodeURIComponent(profil), { cache: "no-store" })
+    fetch("/loglar/veri", { cache: "no-store" })
       .then(function (response) {
         if (!response.ok) {
           throw new Error("HTTP " + response.status);

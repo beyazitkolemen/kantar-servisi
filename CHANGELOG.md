@@ -2,6 +2,12 @@
 
 ## Yayinlanmamis
 
+## 1.1.0 - 2026-06-13
+
+- Sabit tekli/Kantar 1/Kantar 2 profilleri kaldirildi; yeni kurulum bos kantar listesiyle baslar hale getirildi.
+- Yonetim panelinden ad verilerek sinirsiz sayida kantar ekleme, secme, yeniden adlandirma ve silme akisi eklendi.
+- Her kantara kalici benzersiz kimlik verildi; agirlik API'sine kantar adi ve dinamik kantar listesi endpointi eklendi.
+- Eski ozellestirilmis profil ayarlari ilk calistirmada dinamik kantarlara otomatik tasinir hale getirildi.
 - Ayar alanlarina sunucu tarafli dogrulama ve anlasilir hata mesajlari eklendi.
 - Servis host ve port ayarlari tum kantar profilleri icin ortak hale getirildi.
 - HTTP paneli yalnizca yerel istemcilere acildi; CSRF, CSP ve diger guvenlik basliklari eklendi.

@@ -91,12 +91,32 @@ def test_servis_saglik_bilgisi_yanlis_uygulama_ve_ag_hatasini_reddeder(monkeypat
     assert desktop.servis_saglik_bilgisi("http://127.0.0.1") is None
 
 
-def test_tanilama_raporu_sistem_ve_profil_bilgilerini_yazar(monkeypatch, tmp_path):
+def test_tanilama_raporu_sistem_ve_kantar_bilgilerini_yazar(monkeypatch, tmp_path):
     monkeypatch.setenv("KANTAR_VERI_DIZINI", str(tmp_path))
     monkeypatch.setenv("KANTAR_AYAR_DB", str(tmp_path / "ayarlar.sqlite"))
     monkeypatch.setenv("KANTAR_LOG_DOSYA", str(tmp_path / "servis.log"))
     monkeypatch.setattr(desktop, "servis_saglik_bilgisi", lambda _url: {"ok": True})
     monkeypatch.setattr(desktop, "seri_portlari_listele", lambda: [("COM7", "USB Serial")])
+    monkeypatch.setattr(
+        desktop,
+        "kantarlari_listele",
+        lambda: [{"id": "kantar-" + ("a" * 32), "ad": "Giris Kantari", "sira": 1}],
+    )
+    monkeypatch.setattr(
+        desktop,
+        "ayarlari_oku",
+        lambda *_args: {
+            "servis_host": "127.0.0.1",
+            "servis_port": "80",
+            "seri_port": "COM7",
+            "seri_baud_hizi": "9600",
+            "seri_zaman_asimi": "3",
+            "seri_okuma_boyutu": "8",
+            "baslangic_bitleri": "A,@",
+            "agirlik_baslangic_indeksi": "3",
+            "agirlik_bitis_indeksi": "10",
+        },
+    )
 
     rapor_yolu = desktop.tanilama_raporu_olustur()
     icerik = (tmp_path / "kantar-servisi-tanilama.txt").read_text(encoding="utf-8")
@@ -105,8 +125,7 @@ def test_tanilama_raporu_sistem_ve_profil_bilgilerini_yazar(monkeypatch, tmp_pat
     assert "Kantar Servisi Tanilama Raporu" in icerik
     assert "Servis sagligi: Hazir" in icerik
     assert "COM7 | USB Serial" in icerik
-    assert "[tekli]" in icerik
-    assert "[kantar2]" in icerik
+    assert "[Giris Kantari | kantar-" in icerik
 
 
 def test_sunucu_baslatma_ve_durdurma_durumu_gunceller(monkeypatch):

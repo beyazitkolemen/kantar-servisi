@@ -28,7 +28,7 @@ def test_yerel_servis_url_default_portu_gizler(monkeypatch):
 
 
 def test_ayarlar_normalize_edilir():
-    ayarlar = dict(config.VARSAYILAN_AYARLAR[config.PROFIL_TEKLI])
+    ayarlar = dict(config.VARSAYILAN_AYARLAR)
     ayarlar["seri_zaman_asimi"] = "2,5"
     ayarlar["baslangic_bitleri"] = " A, @,A "
     ayarlar["servis_host"] = "::1"
@@ -41,7 +41,7 @@ def test_ayarlar_normalize_edilir():
 
 
 def test_gecersiz_ayarlar_reddedilir():
-    ayarlar = dict(config.VARSAYILAN_AYARLAR[config.PROFIL_TEKLI])
+    ayarlar = dict(config.VARSAYILAN_AYARLAR)
     ayarlar["servis_host"] = "0.0.0.0"
     ayarlar["servis_port"] = "70000"
 
@@ -52,7 +52,7 @@ def test_gecersiz_ayarlar_reddedilir():
 
 
 def test_nan_zaman_asimi_reddedilir():
-    ayarlar = dict(config.VARSAYILAN_AYARLAR[config.PROFIL_TEKLI])
+    ayarlar = dict(config.VARSAYILAN_AYARLAR)
     ayarlar["seri_zaman_asimi"] = "nan"
 
     with pytest.raises(AyarDogrulamaHatasi):

@@ -9,7 +9,7 @@ try:
 except ImportError:
     serial = None
 
-from .config import ayar_float, ayar_int, secili_profil
+from .config import ayar_float, ayar_int
 from .errors import KantarHatasi
 from .logging_utils import gunluge_yaz
 from .storage import ayarlari_oku
@@ -126,23 +126,33 @@ def seri_baglantidan_oku(ayarlar):
                 seri_baglanti.close()
 
 
-def kantar_degerini_oku(profil=None):
-    ayarlar = ayarlari_oku(profil)
+def kantar_degerini_oku(kantar_id=None):
+    ayarlar = ayarlari_oku(kantar_id)
+    if ayarlar.get("_kantar_yok"):
+        raise KantarHatasi("Henuz kantar eklenmedi.", [
+            "Yonetim panelindeki Kantar Ekle alanindan ilk kantari ekleyin.",
+        ])
     ham_veri = seri_baglantidan_oku(ayarlar)
     ham_metin = ham_veriyi_duzenle(ham_veri)
     gunluge_yaz("Kantardan Gelen veri: " + ham_metin)
     return agirlik_degerini_ayikla(ham_metin, ayarlar)
 
 
-def serial_ham_veri_oku(profil=None, seri_port=None):
-    ayarlar = ayarlari_oku(profil)
+def serial_ham_veri_oku(kantar_id=None, seri_port=None):
+    ayarlar = ayarlari_oku(kantar_id)
+    if ayarlar.get("_kantar_yok"):
+        raise KantarHatasi("Henuz kantar eklenmedi.", [
+            "Yonetim panelindeki Kantar Ekle alanindan ilk kantari ekleyin.",
+        ])
     if seri_port:
         ayarlar["seri_port"] = seri_port
     ham_veri = seri_baglantidan_oku(ayarlar)
     ham_metin = ham_veriyi_duzenle(ham_veri)
     sonuc = {
         "ok": True,
-        "profil": ayarlar.get("_profil", profil or secili_profil()),
+        "kantar": ayarlar.get("_kantar_id", ""),
+        "kantar_adi": ayarlar.get("_kantar_adi", ""),
+        "profil": ayarlar.get("_kantar_id", ""),
         "seri_port": ayarlar.get("seri_port", "COM2"),
         "baud_hizi": ayar_int(ayarlar, "seri_baud_hizi"),
         "timeout": ayar_float(ayarlar, "seri_zaman_asimi"),

@@ -5,7 +5,7 @@ from pathlib import Path
 from PIL import Image
 
 from kantar_servis import desktop
-from scripts import generate_build_assets
+from scripts import build_windows_local, generate_build_assets
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -59,6 +59,14 @@ def test_windows_build_gorselleri_beklenen_formatta_uretilir(monkeypatch, tmp_pa
     surum_bilgisi = (tmp_path / "version_info.txt").read_text(encoding="utf-8")
     assert "KantarServisi.exe" in surum_bilgisi
     assert "ProductVersion" in surum_bilgisi
+
+
+def test_windows_manifest_surumu_build_surumunden_uretilir(monkeypatch, tmp_path):
+    monkeypatch.setattr(build_windows_local, "BUILD_DIR", tmp_path)
+
+    manifest = build_windows_local.write_app_manifest("1.2.3")
+
+    assert 'version="1.2.3.0"' in manifest.read_text(encoding="utf-8")
 
 
 def test_github_actions_kullanilmaz_ve_build_yerelde_yapilir():

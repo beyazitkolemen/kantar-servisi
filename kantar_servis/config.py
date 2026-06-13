@@ -2,6 +2,7 @@
 import ipaddress
 import math
 import os
+import re
 
 from .errors import AyarDogrulamaHatasi
 
@@ -13,11 +14,8 @@ GITHUB_RAW_URL = "https://raw.githubusercontent.com/%s/main" % GITHUB_REPO
 GITHUB_UPDATE_MANIFEST_URL = "%s/downloads/latest.json" % GITHUB_RAW_URL
 GITHUB_LATEST_INSTALLER_URL = "%s/downloads/Kantar-Servisi-Setup.exe" % GITHUB_RAW_URL
 
-PROFIL_TEKLI = "tekli"
-PROFIL_KANTAR1 = "kantar1"
-PROFIL_KANTAR2 = "kantar2"
-PROFILLER = (PROFIL_TEKLI, PROFIL_KANTAR1, PROFIL_KANTAR2)
 SERVIS_AYARLARI = ("servis_host", "servis_port")
+KANTAR_KIMLIK_DESENI = re.compile(r"^kantar-[0-9a-f]{32}$")
 
 AYAR_ALANLARI = [
     ("seri_port", "Seri Port", "text"),
@@ -31,41 +29,20 @@ AYAR_ALANLARI = [
     ("servis_port", "Servis Port", "number"),
 ]
 
-VARSAYILAN_AYARLAR = {
-    PROFIL_TEKLI: {
-        "seri_port": "COM2",
-        "seri_baud_hizi": "9600",
-        "seri_zaman_asimi": "3",
-        "seri_okuma_boyutu": "8",
-        "baslangic_bitleri": "A,@",
-        "agirlik_baslangic_indeksi": "3",
-        "agirlik_bitis_indeksi": "10",
-        "servis_host": "127.0.0.1",
-        "servis_port": "80",
-    },
-    PROFIL_KANTAR1: {
-        "seri_port": "COM2",
-        "seri_baud_hizi": "9600",
-        "seri_zaman_asimi": "3",
-        "seri_okuma_boyutu": "8",
-        "baslangic_bitleri": "A,@",
-        "agirlik_baslangic_indeksi": "3",
-        "agirlik_bitis_indeksi": "10",
-        "servis_host": "127.0.0.1",
-        "servis_port": "80",
-    },
-    PROFIL_KANTAR2: {
-        "seri_port": "COM3",
-        "seri_baud_hizi": "9600",
-        "seri_zaman_asimi": "3",
-        "seri_okuma_boyutu": "8",
-        "baslangic_bitleri": "A,@",
-        "agirlik_baslangic_indeksi": "3",
-        "agirlik_bitis_indeksi": "10",
-        "servis_host": "127.0.0.1",
-        "servis_port": "80",
-    },
+VARSAYILAN_KANTAR_AYARLARI = {
+    "seri_port": "COM2",
+    "seri_baud_hizi": "9600",
+    "seri_zaman_asimi": "3",
+    "seri_okuma_boyutu": "8",
+    "baslangic_bitleri": "A,@",
+    "agirlik_baslangic_indeksi": "3",
+    "agirlik_bitis_indeksi": "10",
 }
+VARSAYILAN_SERVIS_AYARLARI = {
+    "servis_host": "127.0.0.1",
+    "servis_port": "80",
+}
+VARSAYILAN_AYARLAR = dict(VARSAYILAN_KANTAR_AYARLARI, **VARSAYILAN_SERVIS_AYARLARI)
 
 
 PAKET_DIZIN = os.path.dirname(os.path.abspath(__file__))
@@ -87,19 +64,19 @@ def klasor_olustur(yol):
         os.makedirs(yol, exist_ok=True)
 
 
-def profil_normalize(profil, varsayilan=None):
-    if varsayilan is None:
-        varsayilan = PROFIL_TEKLI
-    if profil is None:
-        return varsayilan
-    profil = str(profil).strip().lower()
-    if profil not in PROFILLER:
-        return varsayilan
-    return profil
+def kantar_kimligi_normalize(kantar_id):
+    kantar_id = str(kantar_id or "").strip().lower()
+    return kantar_id if KANTAR_KIMLIK_DESENI.match(kantar_id) else ""
 
 
-def secili_profil():
-    return profil_normalize(os.environ.get("KANTAR_AYAR_PROFILI", PROFIL_TEKLI))
+def secili_kantar_kimligi():
+    return kantar_kimligi_normalize(secili_kantar_secimi())
+
+
+def secili_kantar_secimi():
+    return str(
+        os.environ.get("KANTAR_AYAR_KANTARI") or os.environ.get("KANTAR_AYAR_PROFILI") or ""
+    ).strip().lower()
 
 
 def uygulama_veri_dizini():
@@ -159,10 +136,8 @@ def yerel_servis_url(ayarlar=None):
     return "http://%s%s" % (host, port_metni)
 
 
-def profil_varsayilanlari(profil):
-    # Varsayilanlar sadece ilk SQLite kaydini olusturmak icin kullanilir.
-    # Cihaz ve servis davranisi bundan sonra /ayarlar ekranindan yonetilir.
-    return dict(VARSAYILAN_AYARLAR.get(profil, VARSAYILAN_AYARLAR[PROFIL_TEKLI]))
+def kantar_varsayilan_ayarlari():
+    return dict(VARSAYILAN_KANTAR_AYARLARI, **VARSAYILAN_SERVIS_AYARLARI)
 
 
 def guvenli_int(deger, varsayilan):
@@ -272,12 +247,10 @@ def ayarlari_dogrula(ayarlar):
 
 
 def ayar_int(ayarlar, anahtar):
-    profil = ayarlar.get("_profil", secili_profil())
-    varsayilan = VARSAYILAN_AYARLAR.get(profil, VARSAYILAN_AYARLAR[PROFIL_TEKLI]).get(anahtar, "0")
+    varsayilan = VARSAYILAN_AYARLAR.get(anahtar, "0")
     return guvenli_int(ayarlar.get(anahtar), varsayilan)
 
 
 def ayar_float(ayarlar, anahtar):
-    profil = ayarlar.get("_profil", secili_profil())
-    varsayilan = VARSAYILAN_AYARLAR.get(profil, VARSAYILAN_AYARLAR[PROFIL_TEKLI]).get(anahtar, "0")
+    varsayilan = VARSAYILAN_AYARLAR.get(anahtar, "0")
     return guvenli_float(ayarlar.get(anahtar), varsayilan)

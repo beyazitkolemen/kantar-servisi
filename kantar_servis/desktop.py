@@ -15,7 +15,6 @@ from pathlib import Path
 from . import __version__
 from .config import (
     GITHUB_DOWNLOADS_URL,
-    PROFILLER,
     UYGULAMA_ADI,
     ayar_db_yolu,
     log_dosya_yolu,
@@ -24,7 +23,7 @@ from .config import (
 )
 from .logging_utils import gunluge_yaz
 from .serial_bridge import seri_portlari_listele
-from .storage import ayarlari_baslat, ayarlari_oku
+from .storage import ayarlari_baslat, ayarlari_oku, kantarlari_listele
 
 MUTEX_ADI = "Local\\KantarServisi"
 ERROR_ALREADY_EXISTS = 183
@@ -142,10 +141,13 @@ def tanilama_raporu_olustur():
     else:
         satirlar.append("Seri port bulunamadi.")
 
-    satirlar.extend(["", "Profil Ayarlari", "-" * 48])
-    for profil in PROFILLER:
-        ayarlar = ayarlari_oku(profil)
-        satirlar.append("[%s]" % profil)
+    satirlar.extend(["", "Kantar Ayarlari", "-" * 48])
+    kantarlar = kantarlari_listele()
+    if not kantarlar:
+        satirlar.append("Henuz kantar eklenmedi.")
+    for kantar in kantarlar:
+        ayarlar = ayarlari_oku(kantar["id"])
+        satirlar.append("[%s | %s]" % (kantar["ad"], kantar["id"]))
         for anahtar in (
             "seri_port",
             "seri_baud_hizi",

@@ -10,7 +10,7 @@ from kantar_servis.serial_bridge import agirlik_degerini_ayikla
 
 
 AYARLAR = {
-    "_profil": "tekli",
+    "_kantar_id": "kantar-test",
     "baslangic_bitleri": "A,@",
     "agirlik_baslangic_indeksi": "3",
     "agirlik_bitis_indeksi": "10",

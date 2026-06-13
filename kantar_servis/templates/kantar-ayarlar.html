@@ -4,14 +4,29 @@
   <div class="grid gap-6 p-5 sm:p-8 lg:grid-cols-[1fr_320px]">
     <div class="space-y-5">
       {% include 'partials/_alerts.html' %}
-      {% include 'partials/_profile_select.html' %}
-      {% include 'partials/_settings_form.html' %}
+      {% include 'partials/_scale_manager.html' %}
+      {% if kantar %}
+        {% include 'partials/_settings_form.html' %}
+      {% else %}
+        <section class="rounded-xl border border-dashed border-blue-300 bg-blue-50 p-8 text-center">
+          {% if kantarlar %}
+            <h2 class="text-lg font-bold text-slate-900">Bir kantar secin</h2>
+            <p class="mt-2 text-sm text-slate-600">Yukaridaki listeden kantari secip Ac dugmesine basin.</p>
+          {% else %}
+            <h2 class="text-lg font-bold text-slate-900">Henuz kantar eklenmedi</h2>
+            <p class="mt-2 text-sm text-slate-600">Yukaridaki alana kantar adini yazip ekleyin. Seri port ve okuma ayarlari eklendikten sonra acilacak.</p>
+          {% endif %}
+        </section>
+      {% endif %}
     </div>
     <aside class="space-y-4">
-      {% include 'partials/_usage_addresses.html' %}
+      {% if kantar %}{% include 'partials/_usage_addresses.html' %}{% endif %}
       {% include 'partials/_com_ports.html' %}
       {% include 'partials/_sqlite_info.html' %}
       {% include 'partials/_troubleshooting.html' %}
     </aside>
   </div>
+{% endblock %}
+{% block scripts %}
+  <script src="/static/kantarlar.js" defer></script>
 {% endblock %}
