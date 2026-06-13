@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}LİSDEP - Kantar Servisi | Ayarlar{% endblock %}
+{% block content %}
+  <div class="grid gap-6 p-5 sm:p-8 lg:grid-cols-[1fr_320px]">
+    <div class="space-y-5">
+      {% include 'partials/_alerts.html' %}
+      {% include 'partials/_profile_select.html' %}
+      {% include 'partials/_settings_form.html' %}
+    </div>
+    <aside class="space-y-4">
+      {% include 'partials/_usage_addresses.html' %}
+      {% include 'partials/_com_ports.html' %}
+      {% include 'partials/_sqlite_info.html' %}
+      {% include 'partials/_troubleshooting.html' %}
+    </aside>
+  </div>
+{% endblock %}

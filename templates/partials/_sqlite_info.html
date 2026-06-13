@@ -1,0 +1,13 @@
+<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <h2 class="text-base font-bold text-slate-900">SQLite Durumu</h2>
+      <p class="mt-1 text-xs text-slate-500">Ayar veritabani otomatik olusturulur; ek kurulum gerekmez.</p>
+    </div>
+    <span class="rounded-full px-2.5 py-1 text-xs font-semibold {% if sqlite_durumu.ok %}bg-emerald-100 text-emerald-700{% else %}bg-red-100 text-red-700{% endif %}">{{ sqlite_durumu.baslik }}</span>
+  </div>
+  <code class="mt-3 block overflow-x-auto rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">{{ sqlite_durumu.yol }}</code>
+  {% if sqlite_durumu.mesaj %}
+    <p class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 ring-1 ring-red-200">{{ sqlite_durumu.mesaj }}</p>
+  {% endif %}
+</div>

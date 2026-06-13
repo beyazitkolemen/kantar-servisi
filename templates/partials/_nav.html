@@ -1,0 +1,10 @@
+<nav class="border-b border-slate-200 bg-white px-5 py-3 sm:px-8">
+  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div class="text-sm font-semibold text-slate-700">LİSDEP - Kantar Servisi</div>
+    <div class="flex flex-wrap gap-2 text-sm">
+      <a class="rounded-lg px-3 py-2 font-semibold {% if aktif_sayfa == 'ayarlar' %}bg-blue-600 text-white{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}" href="/ayarlar?profil={{ profil }}">Ayarlar</a>
+      <a class="rounded-lg px-3 py-2 font-semibold {% if aktif_sayfa == 'serial' %}bg-blue-600 text-white{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}" href="/serial?profil={{ profil }}">Serial İzleme</a>
+      <a class="rounded-lg px-3 py-2 font-semibold {% if aktif_sayfa == 'loglar' %}bg-blue-600 text-white{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}" href="/loglar?profil={{ profil }}">Loglar</a>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,24 @@
+<form method="post" action="/ayarlar" class="space-y-5">
+  <input type="hidden" name="profil" value="{{ profil }}">
+  <div class="grid gap-4 sm:grid-cols-2">
+    {% for alan in alanlar %}
+      <div>
+        <label class="{{ label_class }}" for="{{ alan.anahtar }}">{{ alan.label }}</label>
+        {% if alan.seri_port %}
+          <select class="{{ input_class }}" id="{{ alan.anahtar }}" name="{{ alan.anahtar }}">
+            {% for secenek in alan.secenekler %}
+              <option value="{{ secenek.value }}" {% if secenek.selected %}selected{% endif %}>{{ secenek.label }}</option>
+            {% endfor %}
+          </select>
+          <p class="mt-1 text-xs text-slate-500">Aktif COM portlar otomatik listelenir. Port gorunmuyorsa donusturucu kabloyu ve surucuyu kontrol edin.</p>
+        {% else %}
+          <input class="{{ input_class }}" id="{{ alan.anahtar }}" name="{{ alan.anahtar }}" type="{{ alan.tip }}" value="{{ alan.deger }}">
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <p class="text-xs text-slate-500">Ayarlar yerel SQLite dosyasina otomatik kaydedilir.</p>
+    <button type="submit" class="inline-flex justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200">Ayarlari Kaydet</button>
+  </div>
+</form>
