@@ -1,5 +1,4 @@
-# -*- coding: cp1254 -*-
-from .desktop import main
+from kantar_servis.desktop import main
 
 
 if __name__ == "__main__":

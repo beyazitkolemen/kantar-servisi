@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}LİSDEP - Kantar Servisi | Sistem{% endblock %}
+{% block content %}
+  <div class="grid gap-6 p-5 sm:p-8 lg:grid-cols-[1fr_340px]">
+    <div class="space-y-5">
+      <section class="rounded-xl border border-slate-200 bg-white p-5">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Kurulu Surum</p>
+            <h2 class="mt-1 text-2xl font-bold text-slate-900">v{{ guncelleme.guncel_surum }}</h2>
+          </div>
+          {% if guncelleme.ok and guncelleme.guncelleme_var %}
+            <span class="w-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">Yeni surum: v{{ guncelleme.son_surum }}</span>
+          {% elif guncelleme.ok %}
+            <span class="w-fit rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">Guncel</span>
+          {% elif guncelleme.release_yok %}
+            <span class="w-fit rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">Ilk surum bekleniyor</span>
+          {% else %}
+            <span class="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Kontrol edilemedi</span>
+          {% endif %}
+        </div>
+
+        {% if guncelleme.ok %}
+          <p class="mt-4 text-sm text-slate-600">
+            GitHub uzerindeki son kararli surum v{{ guncelleme.son_surum }}.
+            {% if guncelleme.yayin_tarihi %}Yayin tarihi: {{ guncelleme.yayin_tarihi }}.{% endif %}
+          </p>
+        {% else %}
+          <p class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">{{ guncelleme.mesaj }}</p>
+        {% endif %}
+
+        <div class="mt-5 flex flex-wrap gap-3">
+          <a href="{{ guncelleme.kurulum_url }}" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Windows Kurulumunu Indir</a>
+          <a href="{{ guncelleme.surumler_url }}" target="_blank" rel="noopener noreferrer" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">GitHub Surumlerini Ac</a>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-700">
+        <h2 class="font-bold text-slate-900">Guncelleme Adimlari</h2>
+        <ol class="mt-3 list-decimal space-y-2 pl-5">
+          <li>Windows kurulum dosyasini GitHub Releases uzerinden indirin.</li>
+          <li>Sistem tepsisindeki Kantar Servisi simgesine sag tiklayip Cikis secenegini kullanin.</li>
+          <li>Kurulum dosyasini calistirin. Mevcut ayarlar ve loglar korunur.</li>
+          <li>Kurulum tamamlandiginda uygulamayi yeniden baslatin.</li>
+        </ol>
+      </section>
+    </div>
+
+    <aside class="space-y-4">
+      <section class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+        <h2 class="font-bold text-slate-900">Dagitim Kaynagi</h2>
+        <p class="mt-2">Kurulum dosyalari ve surum notlari yalnizca resmi GitHub deposundan yayinlanir.</p>
+        <a href="{{ github_repo_url }}" target="_blank" rel="noopener noreferrer" class="mt-3 block break-all rounded-lg bg-white px-3 py-2 text-xs font-semibold text-blue-700 ring-1 ring-slate-200">{{ github_repo_url }}</a>
+      </section>
+
+      <section class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+        <h2 class="font-bold text-slate-900">Yerel Veri</h2>
+        <p class="mt-2 text-xs text-slate-500">Program guncellense veya kaldirilsa bile ayarlar bu klasorde korunur.</p>
+        <code class="mt-3 block overflow-x-auto rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">{{ veri_dizini }}</code>
+      </section>
+    </aside>
+  </div>
+{% endblock %}

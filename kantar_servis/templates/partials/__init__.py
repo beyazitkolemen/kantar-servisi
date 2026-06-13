@@ -1,0 +1,1 @@
+"""Flask sablon parcalari."""

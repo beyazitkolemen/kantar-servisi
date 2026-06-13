@@ -1,0 +1,102 @@
+# Kantar Servisi
+
+Kantar Servisi, Windows bilgisayardaki seri porttan kantar verisini okuyup yerel HTTP adresi uzerinden sunan masaustu uygulamasidir. Python kurulumu veya `.bat` dosyasi gerektirmez.
+
+## Windows Kurulumu
+
+Desteklenen sistem: Windows 10/11 x64.
+
+1. [Son Windows kurulum dosyasini indirin](https://github.com/beyazitkolemen/kantar-servisi/releases/latest/download/Kantar-Servisi-Setup.exe).
+2. `Kantar-Servisi-Setup.exe` dosyasini calistirin.
+3. Baslat menusundeki **Kantar Servisi** kisayolunu acin.
+4. Sistem tepsisi simgesinden yonetim panelini, log klasorunu ve servis yeniden baslatma islemini yonetin.
+
+Ilk GitHub Release yayinlanmadan sabit indirme baglantisi `404` doner. Release olustugunda ayni baglanti her zaman son kararli kurulum dosyasini indirir.
+
+## Adresler
+
+Varsayilan servis adresi `http://127.0.0.1`:
+
+| Islem | Adres |
+| --- | --- |
+| Tekli kantar | `http://127.0.0.1/` |
+| Kantar 1 | `http://127.0.0.1/?profil=kantar1` |
+| Kantar 2 | `http://127.0.0.1/?profil=kantar2` |
+| Ayarlar | `http://127.0.0.1/ayarlar` |
+| Serial izleme | `http://127.0.0.1/serial` |
+| Loglar | `http://127.0.0.1/loglar` |
+| Surum ve guncelleme | `http://127.0.0.1/sistem` |
+| Saglik kontrolu | `http://127.0.0.1/saglik` |
+
+## Yerel Veriler
+
+Ayarlar ve loglar uygulama kurulum klasorunden ayri tutulur:
+
+```text
+%LOCALAPPDATA%\Kantar Servisi\
+├── kantar-ayarlar.sqlite
+└── kantar-servis.log
+```
+
+Eski `C:\kantar\kantar-ayarlar.sqlite` dosyasi varsa ilk calistirmada otomatik olarak yeni konuma kopyalanir. Guncelleme ve kaldirma islemleri kullanici ayarlarini silmez.
+
+Ortam degiskenleri:
+
+| Degisken | Amac |
+| --- | --- |
+| `KANTAR_VERI_DIZINI` | Ayar ve log ana klasorunu degistirir |
+| `KANTAR_AYAR_DB` | SQLite dosyasini dogrudan belirler |
+| `KANTAR_LOG_DOSYA` | Log dosyasini dogrudan belirler |
+| `KANTAR_SERVIS_HOST` | Kayitli host ayarini gecici olarak ezer |
+| `KANTAR_SERVIS_PORT` | Kayitli port ayarini gecici olarak ezer |
+| `KANTAR_AYAR_PROFILI` | Varsayilan kantar profilini belirler |
+
+## Gelistirme
+
+Python 3.9 veya daha yeni bir surum ve Node.js 20 gerekir.
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements-dev.txt
+npm ci
+npm run build:css
+python -m pytest
+python -m kantar_servis
+```
+
+Kaynak koddan yalnizca HTTP servisini calistirmak icin:
+
+```powershell
+python -m kantar_servis --server
+```
+
+## GitHub Release Akisi
+
+`.github/workflows/release.yml`, `v*` etiketi push edildiginde Windows kurulumunu otomatik olusturur.
+
+1. `kantar_servis/__init__.py` icindeki `__version__` degerini guncelleyin.
+2. Degisiklikleri `main` dalina alin.
+3. Ayni surumle etiket olusturup push edin:
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Workflow su dosyalari GitHub Release varligi olarak yayinlar:
+
+- `Kantar-Servisi-Setup.exe`
+- `Kantar-Servisi-Portable.zip`
+- `SHA256SUMS.txt`
+
+Etiket ile uygulama surumu eslesmezse release islemi durur. CI hem Linux hem Windows uzerinde testleri, CSS uretimini ve Python paketini dogrular.
+
+## Kod Imzalama
+
+Windows imzalama sertifikasi varsa depo ayarlarinda su Actions secret degerlerini tanimlayin:
+
+- `WINDOWS_CERTIFICATE_BASE64`: PFX dosyasinin Base64 icerigi
+- `WINDOWS_CERTIFICATE_PASSWORD`: PFX parolasi
+
+Secret degerleri yoksa paket uretilir ancak Windows SmartScreen imzalanmamis uygulama uyarisi gosterebilir.

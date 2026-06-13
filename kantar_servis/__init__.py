@@ -1,4 +1,4 @@
-# -*- coding: cp1254 -*-
-"""LISDEP kantar servis paketi."""
+# -*- coding: utf-8 -*-
+"""LISDEP Kantar Servisi."""
 
 __version__ = "1.0.0"

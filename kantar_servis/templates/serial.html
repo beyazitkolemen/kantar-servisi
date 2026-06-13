@@ -91,8 +91,7 @@
   }
 
   function panelGuncelle() {
-    akis.textContent = satirlar.join('
-');
+    akis.textContent = satirlar.join('\n');
     if (document.getElementById('otomatik-kaydir').checked) {
       akis.scrollTop = akis.scrollHeight;
     }
@@ -140,8 +139,7 @@
             satir += ' | HEX: ' + data.ham_hex;
           }
           if (data.uyari) {
-            satir += ' | UYARI: ' + data.uyari.replace(/
-/g, ' ');
+            satir += ' | UYARI: ' + data.uyari.replace(/\n/g, ' ');
           }
           satirYaz(satir);
         } else {

@@ -16,17 +16,35 @@ try:
 except ImportError:
     waitress_serve = None
 
-from .config import AYAR_ALANLARI, PROFILLER, TEMPLATE_KLASOR, ayar_int, profil_normalize, secili_profil
+from . import __version__
+from .config import (
+    AYAR_ALANLARI,
+    GITHUB_REPO_URL,
+    PROFILLER,
+    STATIC_KLASOR,
+    TEMPLATE_KLASOR,
+    log_dosya_yolu,
+    profil_normalize,
+    secili_profil,
+    servis_hostu,
+    servis_portu,
+    uygulama_veri_dizini,
+)
 from .errors import KantarHatasi
 from .logging_utils import gunluge_yaz, log_dosya_bilgisi, loglari_oku, loglari_temizle
-from .config import log_dosya_yolu
 from .serial_bridge import kantar_degerini_oku, serial_ham_veri_oku, seri_port_bilgileri, seri_port_secenekleri, seri_portlari_listele
 from .storage import ayarlari_baslat, ayarlari_kaydet, ayarlari_oku, sqlite_durumu_oku
+from .updates import son_surumu_kontrol_et
 
 def create_app():
     if Flask is None:
         return None
-    flask_app = Flask(__name__, template_folder=TEMPLATE_KLASOR)
+    flask_app = Flask(
+        __name__,
+        template_folder=TEMPLATE_KLASOR,
+        static_folder=STATIC_KLASOR,
+        static_url_path="/static",
+    )
     register_routes(flask_app)
     return flask_app
 
@@ -100,9 +118,9 @@ def sorun_giderme_maddeleri():
     return [
         {"baslik": "COM port listede gorunmuyor", "aciklama": "USB/RS232 donusturucuyu tekrar takin, Windows Aygit Yoneticisi'nde portu kontrol edin ve surucu kurulumunun tamamlandigindan emin olun."},
         {"baslik": "Port kullanimda hatasi", "aciklama": "Ayni COM portu kullanan diger kantar programlarini kapatin. Gerekirse servisi kapatip tekrar baslatin."},
-        {"baslik": "SQLite ayari kaydedilemiyor", "aciklama": "C:\\kantar klasorunun yazilabilir oldugunu kontrol edin. Hizli kurulum veya calistir.bat dosyasini yonetici olarak calistirin."},
+        {"baslik": "SQLite ayari kaydedilemiyor", "aciklama": "Sistem sayfasindaki yerel veri klasorunun yazilabilir oldugunu kontrol edin ve uygulamayi yeniden baslatin."},
         {"baslik": "Ayarlar sayfasi acilmiyor", "aciklama": "Kantar servisi calisiyor mu kontrol edin. Tek servis adresi http://127.0.0.1/ayarlar seklindedir; Kantar 2 icin port degil ?profil=kantar2 parametresi kullanilir."},
-        {"baslik": "Template dosyasi bulunamadi", "aciklama": "C:\\kantar\\templates\\kantar-ayarlar.html dosyasinin var oldugunu kontrol edin. Eksikse hizli kurulumu tekrar calistirin."},
+        {"baslik": "Program dosyasi eksik", "aciklama": "GitHub Releases sayfasindaki son Windows kurulum dosyasini indirip uygulamayi yeniden kurun. Ayarlariniz korunur."},
     ]
 
 
@@ -150,6 +168,15 @@ def register_routes(flask_app):
             ], str(hata)).kullanici_mesaji()
             gunluge_yaz(mesaj)
             return metin_cevabi(mesaj, 500)
+
+    @flask_app.route("/saglik")
+    def saglik():
+        return json_cevabi({
+            "ok": True,
+            "uygulama": "Kantar Servisi",
+            "surum": __version__,
+            "profil": istek_profili(),
+        })
 
     @flask_app.route("/ayarlar", methods=["GET", "POST"])
     def ayarlar_sayfasi():
@@ -239,6 +266,16 @@ def register_routes(flask_app):
             return json_cevabi({"ok": True, "silinen": silinen})
         return redirect("/loglar?profil=%s&mesaj=Loglar temizlendi" % istek_profili())
 
+    @flask_app.route("/sistem")
+    def sistem_sayfasi():
+        context = ortak_template_context("sistem", istek_profili())
+        context.update({
+            "guncelleme": son_surumu_kontrol_et(),
+            "github_repo_url": GITHUB_REPO_URL,
+            "veri_dizini": uygulama_veri_dizini(),
+        })
+        return html_cevabi(render_template("sistem.html", **context))
+
 
 app = create_app()
 
@@ -255,8 +292,8 @@ def calistir():
         )
         sys.exit(1)
     ayarlar = ayarlari_oku()
-    servis_host = ayarlar.get("servis_host", "127.0.0.1")
-    servis_port = ayar_int(ayarlar, "servis_port")
+    servis_host = servis_hostu(ayarlar)
+    servis_port = servis_portu(ayarlar)
     try:
         if waitress_serve is not None:
             gunluge_yaz("Waitress WSGI sunucusu baslatiliyor: %s:%s" % (servis_host, servis_port))

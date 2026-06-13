@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kantar-servisi"
+dynamic = ["version"]
+description = "Windows seri port uzerinden kantar verisi sunan yerel HTTP servisi"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "Flask>=3.0,<4",
+    "Pillow>=10,<13",
+    "pyserial>=3.5,<4",
+    "pystray>=0.19,<1",
+    "waitress>=3.0,<4",
+]
+
+[project.urls]
+Homepage = "https://github.com/beyazitkolemen/kantar-servisi"
+Releases = "https://github.com/beyazitkolemen/kantar-servisi/releases"
+Issues = "https://github.com/beyazitkolemen/kantar-servisi/issues"
+
+[project.scripts]
+kantar-servisi = "kantar_servis.desktop:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "kantar_servis.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["kantar_servis*"]
+namespaces = false
+
+[tool.setuptools.package-data]
+kantar_servis = [
+    "templates/*.html",
+    "templates/partials/*.html",
+    "static/*.css",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

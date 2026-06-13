@@ -63,8 +63,7 @@
     fetch('/loglar/veri?profil={{ profil }}', { cache: 'no-store' })
       .then(function (response) { return response.json(); })
       .then(function (data) {
-        document.getElementById('loglar').textContent = (data.loglar || []).join('
-');
+        document.getElementById('loglar').textContent = (data.loglar || []).join('\n');
         if (data.log_bilgisi) {
           document.getElementById('log-boyut').textContent = data.log_bilgisi.boyut_kb + ' KB';
           document.getElementById('log-son-guncelleme').textContent = data.log_bilgisi.son_guncelleme;

@@ -1,0 +1,10 @@
+{
+  "name": "kantar-servisi-assets",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -c tailwind.config.js -i assets/tailwind-input.css -o kantar_servis/static/app.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}

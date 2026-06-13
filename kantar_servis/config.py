@@ -1,6 +1,12 @@
 # -*- coding: cp1254 -*-
 import os
 
+UYGULAMA_ADI = "Kantar Servisi"
+GITHUB_REPO = "beyazitkolemen/kantar-servisi"
+GITHUB_REPO_URL = "https://github.com/%s" % GITHUB_REPO
+GITHUB_RELEASES_URL = "%s/releases" % GITHUB_REPO_URL
+GITHUB_LATEST_INSTALLER_URL = "%s/latest/download/Kantar-Servisi-Setup.exe" % GITHUB_RELEASES_URL
+
 PROFIL_TEKLI = "tekli"
 PROFIL_KANTAR1 = "kantar1"
 PROFIL_KANTAR2 = "kantar2"
@@ -55,13 +61,14 @@ VARSAYILAN_AYARLAR = {
 }
 
 
-KOK_DIZIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEMPLATE_KLASOR = os.path.join(KOK_DIZIN, "templates")
+PAKET_DIZIN = os.path.dirname(os.path.abspath(__file__))
+TEMPLATE_KLASOR = os.path.join(PAKET_DIZIN, "templates")
+STATIC_KLASOR = os.path.join(PAKET_DIZIN, "static")
 
 
 def klasor_olustur(yol):
     if yol and not os.path.isdir(yol):
-        os.makedirs(yol)
+        os.makedirs(yol, exist_ok=True)
 
 
 def profil_normalize(profil, varsayilan=None):
@@ -79,22 +86,56 @@ def secili_profil():
     return profil_normalize(os.environ.get("KANTAR_AYAR_PROFILI", PROFIL_TEKLI))
 
 
+def uygulama_veri_dizini():
+    env_yol = os.environ.get("KANTAR_VERI_DIZINI")
+    if env_yol:
+        return os.path.abspath(os.path.expanduser(env_yol))
+    if os.name == "nt":
+        yerel = os.environ.get("LOCALAPPDATA")
+        if not yerel:
+            yerel = os.path.join(os.path.expanduser("~"), "AppData", "Local")
+        return os.path.join(yerel, UYGULAMA_ADI)
+    xdg_veri = os.environ.get("XDG_DATA_HOME")
+    if not xdg_veri:
+        xdg_veri = os.path.join(os.path.expanduser("~"), ".local", "share")
+    return os.path.join(xdg_veri, "kantar-servisi")
+
+
 def ayar_db_yolu():
     env_yol = os.environ.get("KANTAR_AYAR_DB")
     if env_yol:
-        return env_yol
-    if os.name == "nt":
-        return os.path.join("C:\\kantar", "kantar-ayarlar.sqlite")
-    return os.path.join(KOK_DIZIN, "kantar-ayarlar.sqlite")
+        return os.path.abspath(os.path.expanduser(env_yol))
+    return os.path.join(uygulama_veri_dizini(), "kantar-ayarlar.sqlite")
 
 
 def log_dosya_yolu():
     env_yol = os.environ.get("KANTAR_LOG_DOSYA")
     if env_yol:
-        return env_yol
-    if os.name == "nt":
-        return os.path.join("C:\\kantar", "kantar-servis.log")
-    return os.path.join(KOK_DIZIN, "kantar-servis.log")
+        return os.path.abspath(os.path.expanduser(env_yol))
+    return os.path.join(uygulama_veri_dizini(), "kantar-servis.log")
+
+
+def servis_hostu(ayarlar):
+    return str(os.environ.get("KANTAR_SERVIS_HOST") or ayarlar.get("servis_host") or "127.0.0.1").strip()
+
+
+def servis_portu(ayarlar):
+    env_port = os.environ.get("KANTAR_SERVIS_PORT")
+    if env_port:
+        return guvenli_int(env_port, 80)
+    return ayar_int(ayarlar, "servis_port")
+
+
+def yerel_servis_url(ayarlar=None):
+    if ayarlar is None:
+        from .storage import ayarlari_oku
+        ayarlar = ayarlari_oku()
+    host = servis_hostu(ayarlar)
+    if host in ("0.0.0.0", "::", "[::]"):
+        host = "127.0.0.1"
+    port = servis_portu(ayarlar)
+    port_metni = "" if port == 80 else ":%s" % port
+    return "http://%s%s" % (host, port_metni)
 
 
 def profil_varsayilanlari(profil):

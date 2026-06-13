@@ -1,14 +1,35 @@
 # -*- coding: cp1254 -*-
 import os
+import shutil
 import sqlite3
 
 from .config import AYAR_ALANLARI, klasor_olustur, ayar_db_yolu, profil_normalize, secili_profil, profil_varsayilanlari
 
 
+def eski_ayar_db_yolu():
+    if os.name != "nt":
+        return None
+    return os.path.join("C:\\kantar", "kantar-ayarlar.sqlite")
+
+
+def eski_ayarlari_tasi():
+    hedef = ayar_db_yolu()
+    kaynak = eski_ayar_db_yolu()
+    if not kaynak or os.path.isfile(hedef) or not os.path.isfile(kaynak):
+        return False
+    if os.path.normcase(os.path.abspath(kaynak)) == os.path.normcase(os.path.abspath(hedef)):
+        return False
+    klasor_olustur(os.path.dirname(hedef))
+    shutil.copy2(kaynak, hedef)
+    return True
+
+
 def baglanti_ac():
+    eski_ayarlari_tasi()
     db_yolu = ayar_db_yolu()
     klasor_olustur(os.path.dirname(db_yolu))
-    baglanti = sqlite3.connect(db_yolu)
+    baglanti = sqlite3.connect(db_yolu, timeout=10)
+    baglanti.execute("PRAGMA busy_timeout = 10000")
     baglanti.execute(
         "CREATE TABLE IF NOT EXISTS kantar_ayarlar ("
         "profil TEXT NOT NULL, "
