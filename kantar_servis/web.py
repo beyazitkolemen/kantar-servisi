@@ -1,5 +1,9 @@
 # -*- coding: cp1254 -*-
 import json
+import hmac
+import ipaddress
+import re
+import secrets
 import time
 
 try:
@@ -19,6 +23,7 @@ except ImportError:
 from . import __version__
 from .config import (
     AYAR_ALANLARI,
+    AYAR_GIRIS_OZELLIKLERI,
     GITHUB_REPO_URL,
     PROFILLER,
     STATIC_KLASOR,
@@ -29,12 +34,17 @@ from .config import (
     servis_hostu,
     servis_portu,
     uygulama_veri_dizini,
+    yerel_servis_url,
 )
-from .errors import KantarHatasi
+from .errors import AyarDogrulamaHatasi, KantarHatasi
 from .logging_utils import gunluge_yaz, log_dosya_bilgisi, loglari_oku, loglari_temizle
 from .serial_bridge import kantar_degerini_oku, serial_ham_veri_oku, seri_port_bilgileri, seri_port_secenekleri, seri_portlari_listele
 from .storage import ayarlari_baslat, ayarlari_kaydet, ayarlari_oku, sqlite_durumu_oku
 from .updates import son_surumu_kontrol_et
+
+CSRF_TOKEN = secrets.token_urlsafe(32)
+LISDEP_ORIGIN_DESENI = re.compile(r"^https://(?:[a-z0-9-]+\.)*lisdep\.com(?::\d+)?$", re.IGNORECASE)
+
 
 def create_app():
     if Flask is None:
@@ -45,6 +55,7 @@ def create_app():
         static_folder=STATIC_KLASOR,
         static_url_path="/static",
     )
+    register_security(flask_app)
     register_routes(flask_app)
     return flask_app
 
@@ -79,6 +90,75 @@ def json_cevabi(veri, durum=200):
     return metin_cevabi(metin, durum, "application/json")
 
 
+def istemci_yerel_mi(adres):
+    if not adres:
+        return True
+    try:
+        return ipaddress.ip_address(adres).is_loopback
+    except ValueError:
+        return False
+
+
+def origin_izinli_mi(origin):
+    origin = str(origin or "").strip()
+    if not origin:
+        return False
+    if origin_lisdep_mi(origin):
+        return True
+    return bool(re.match(r"^https?://(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$", origin, re.IGNORECASE))
+
+
+def origin_lisdep_mi(origin):
+    return bool(LISDEP_ORIGIN_DESENI.match(str(origin or "").strip()))
+
+
+def csrf_gecerli_mi():
+    if request is None:
+        return False
+    token = request.form.get("_csrf_token") or request.headers.get("X-CSRF-Token") or ""
+    return hmac.compare_digest(str(token), CSRF_TOKEN)
+
+
+def register_security(flask_app):
+    @flask_app.before_request
+    def yalnizca_yerel_istemci():
+        if not istemci_yerel_mi(request.remote_addr):
+            return json_cevabi({"ok": False, "hata": "Bu servis yalnizca yerel bilgisayardan kullanilabilir."}, 403)
+        origin = request.headers.get("Origin", "")
+        capraz_site = request.headers.get("Sec-Fetch-Site", "").lower() == "cross-site"
+        if (origin or capraz_site) and not origin_izinli_mi(origin):
+            return json_cevabi({"ok": False, "hata": "Bu web kaynaginin yerel servise erisim izni yok."}, 403)
+        if capraz_site and origin_lisdep_mi(origin) and request.path not in ("/", "/api/v1/agirlik"):
+            return json_cevabi({"ok": False, "hata": "Bu endpoint web entegrasyonuna acik degil."}, 403)
+        return None
+
+    @flask_app.after_request
+    def guvenlik_basliklari(cevap):
+        cevap.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self'; "
+            "img-src 'self' data:; connect-src 'self'; object-src 'none'; "
+            "base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
+        )
+        cevap.headers["X-Content-Type-Options"] = "nosniff"
+        cevap.headers["X-Frame-Options"] = "DENY"
+        cevap.headers["Referrer-Policy"] = "no-referrer"
+        cevap.headers["Cache-Control"] = "no-store"
+
+        if request.path in ("/", "/api/v1/agirlik"):
+            cevap.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+            origin = request.headers.get("Origin", "")
+            if origin_izinli_mi(origin):
+                cevap.headers["Access-Control-Allow-Origin"] = origin
+                cevap.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+                cevap.headers["Access-Control-Allow-Headers"] = "Content-Type"
+                if request.headers.get("Access-Control-Request-Private-Network") == "true":
+                    cevap.headers["Access-Control-Allow-Private-Network"] = "true"
+                cevap.headers["Vary"] = "Origin"
+        else:
+            cevap.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+        return cevap
+
+
 def dosya_indirme_cevabi(metin, dosya_adi):
     if Response is None:
         return metin
@@ -90,10 +170,13 @@ def dosya_indirme_cevabi(metin, dosya_adi):
 def ortak_template_context(aktif_sayfa, profil=None):
     if profil is None:
         profil = secili_profil()
+    ayarlar = ayarlari_oku(profil)
     return {
         "aktif_sayfa": aktif_sayfa,
         "profil": profil,
         "profiller": PROFILLER,
+        "csrf_token": CSRF_TOKEN,
+        "servis_url": yerel_servis_url(ayarlar),
         "input_class": "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
         "label_class": "block text-sm font-semibold text-slate-700",
     }
@@ -109,6 +192,8 @@ def ayar_formu_alanlari(ayarlar, portlar):
             "tip": tip,
             "deger": deger,
             "seri_port": anahtar == "seri_port",
+            "global_ayar": anahtar in ("servis_host", "servis_port"),
+            "ozellikler": AYAR_GIRIS_OZELLIKLERI.get(anahtar, {}),
             "secenekler": seri_port_secenekleri(deger, portlar) if anahtar == "seri_port" else [],
         })
     return alanlar
@@ -124,13 +209,14 @@ def sorun_giderme_maddeleri():
     ]
 
 
-def ayar_formu_html(profil, ayarlar, mesaj=None):
+def ayar_formu_html(profil, ayarlar, mesaj=None, hatalar=None):
     if render_template is None:
         return "Kantar ayarlari sayfasi icin Flask render_template kullanilamadi. Flask paketini kontrol edin."
     portlar = seri_portlari_listele()
     context = ortak_template_context("ayarlar", profil)
     context.update({
         "mesaj": mesaj,
+        "hatalar": hatalar or [],
         "alanlar": ayar_formu_alanlari(ayarlar, portlar),
         "portlar": seri_port_bilgileri(portlar),
         "sqlite_durumu": sqlite_durumu_oku(),
@@ -153,27 +239,43 @@ def register_routes(flask_app):
     if flask_app is None:
         return
 
-    @flask_app.route("/")
-    def kantar_degeri():
+    def agirlik_oku():
+        profil = istek_profili()
         try:
-            return metin_cevabi(kantar_degerini_oku(istek_profili()))
+            return {"ok": True, "profil": profil, "agirlik": kantar_degerini_oku(profil)}, 200
         except KantarHatasi as hata:
             mesaj = hata.kullanici_mesaji()
             gunluge_yaz(mesaj)
-            return metin_cevabi(mesaj, 500)
+            return {"ok": False, "profil": profil, "hata": mesaj}, 503
         except Exception as hata:
             mesaj = KantarHatasi("Beklenmeyen bir hata olustu.", [
-                "Python servis ekranindaki hata kaydini kontrol edin.",
-                "Flask servisini yeniden baslatip tekrar deneyin.",
+                "Servis loglarini kontrol edin.",
+                "Kantar Servisi uygulamasini yeniden baslatin.",
             ], str(hata)).kullanici_mesaji()
             gunluge_yaz(mesaj)
-            return metin_cevabi(mesaj, 500)
+            return {"ok": False, "profil": profil, "hata": mesaj}, 500
+
+    @flask_app.route("/", methods=["GET", "OPTIONS"])
+    def kantar_degeri():
+        if request.method == "OPTIONS":
+            return metin_cevabi("", 204)
+        sonuc, durum = agirlik_oku()
+        return metin_cevabi(sonuc.get("agirlik") if sonuc["ok"] else sonuc["hata"], durum)
+
+    @flask_app.route("/api/v1/agirlik", methods=["GET", "OPTIONS"])
+    def agirlik_api():
+        if request.method == "OPTIONS":
+            return metin_cevabi("", 204)
+        sonuc, durum = agirlik_oku()
+        sonuc["zaman"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        return json_cevabi(sonuc, durum)
 
     @flask_app.route("/saglik")
     def saglik():
         return json_cevabi({
             "ok": True,
             "uygulama": "Kantar Servisi",
+            "durum": "hazir",
             "surum": __version__,
             "profil": istek_profili(),
         })
@@ -183,7 +285,16 @@ def register_routes(flask_app):
         profil = istek_profili()
         mesaj = None
         if request.method == "POST":
-            ayarlari_kaydet(profil, form_ayarlari_al(request.form))
+            if not csrf_gecerli_mi():
+                return html_cevabi(
+                    ayar_formu_html(profil, form_ayarlari_al(request.form), hatalar=["Form guvenlik dogrulamasi basarisiz. Sayfayi yenileyip tekrar deneyin."]),
+                    403,
+                )
+            form_ayarlari = form_ayarlari_al(request.form)
+            try:
+                ayarlari_kaydet(profil, form_ayarlari)
+            except AyarDogrulamaHatasi as hata:
+                return html_cevabi(ayar_formu_html(profil, form_ayarlari, hatalar=hata.hatalar), 400)
             mesaj = "Ayarlar kaydedildi. Servis host veya port degistiyse servisi yeniden baslatin."
         return html_cevabi(ayar_formu_html(profil, ayarlari_oku(profil), mesaj))
 
@@ -260,6 +371,8 @@ def register_routes(flask_app):
 
     @flask_app.route("/loglar/temizle", methods=["POST"])
     def loglar_temizle():
+        if not csrf_gecerli_mi():
+            return json_cevabi({"ok": False, "hata": "Form guvenlik dogrulamasi basarisiz."}, 403)
         silinen = loglari_temizle()
         gunluge_yaz("Log temizleme islemi tamamlandi. Silinen dosya sayisi: %s" % silinen)
         if redirect is None:
@@ -270,7 +383,7 @@ def register_routes(flask_app):
     def sistem_sayfasi():
         context = ortak_template_context("sistem", istek_profili())
         context.update({
-            "guncelleme": son_surumu_kontrol_et(),
+            "guncelleme": son_surumu_kontrol_et(zorla=request.args.get("yenile") == "1"),
             "github_repo_url": GITHUB_REPO_URL,
             "veri_dizini": uygulama_veri_dizini(),
         })
@@ -283,14 +396,13 @@ app = create_app()
 def calistir():
     ayarlari_baslat()
     if app is None:
-        import sys
-        sys.stderr.write(
+        gunluge_yaz(
             "Kantar hatasi: Flask paketi kurulu degil.\n"
             "Kontrol edilecekler:\n"
             "- Komut satirinda pip install flask pyserial calistirin.\n"
             "- Betigi calistiran Python ortami ile kurulum yaptiginiz Python ortaminin ayni oldugunu kontrol edin.\n"
         )
-        sys.exit(1)
+        return 1
     ayarlar = ayarlari_oku()
     servis_host = servis_hostu(ayarlar)
     servis_port = servis_portu(ayarlar)
@@ -302,8 +414,7 @@ def calistir():
             gunluge_yaz("Waitress bulunamadi; Flask gelistirme sunucusu ile devam ediliyor.")
             app.run(host=servis_host, port=servis_port)
     except Exception as hata:
-        import sys
-        sys.stderr.write(
+        gunluge_yaz(
             "Kantar hatasi: Flask servisi baslatilamadi.\n"
             "Kontrol edilecekler:\n"
             "- 127.0.0.1/ayarlar sayfasindan servis host ve port ayarlarini kontrol edin.\n"
@@ -311,4 +422,5 @@ def calistir():
             "- 80 portu icin yonetici yetkisi gerekebilir; gerekirse 8090 gibi bir port deneyin.\n"
             "Teknik detay: %s\n" % hata
         )
-        sys.exit(1)
+        return 1
+    return 0

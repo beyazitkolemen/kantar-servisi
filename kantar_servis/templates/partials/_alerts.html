@@ -2,6 +2,17 @@
   <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ mesaj }}</div>
 {% endif %}
 
+{% if hatalar %}
+  <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900" role="alert">
+    <p class="font-bold">Ayarlar kaydedilemedi</p>
+    <ul class="mt-2 list-disc space-y-1 pl-5">
+      {% for hata in hatalar %}
+        <li>{{ hata }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
 <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
   Servis host veya port degisikliginden sonra sistem tepsisi menusunden servisi yeniden baslatin. Cift kantar icin ayri port gerekmez; okuma adresinde profil parametresi kullanilir.
 </div>

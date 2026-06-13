@@ -13,8 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ["3.10", "3.12"]
+        os: [ubuntu-latest, windows-2025]
+        python-version: ["3.9", "3.10", "3.12"]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -43,7 +43,10 @@ jobs:
         run: git diff --exit-code -- kantar_servis/static/app.css
 
       - name: Testleri calistir
-        run: python -m pytest
+        run: |
+          python -m pip check
+          python -m compileall -q kantar_servis tests
+          python -m pytest
 
       - name: Python paketini dogrula
         run: python -m build

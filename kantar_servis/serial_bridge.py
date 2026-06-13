@@ -1,5 +1,7 @@
 # -*- coding: cp1254 -*-
+import os
 import re
+import threading
 import time
 
 try:
@@ -11,6 +13,26 @@ from .config import ayar_float, ayar_int, secili_profil
 from .errors import KantarHatasi
 from .logging_utils import gunluge_yaz
 from .storage import ayarlari_oku
+
+_PORT_KILITLERI = {}
+_PORT_KILITLERI_KILIDI = threading.Lock()
+
+
+def _port_kilidi(seri_port):
+    kilit_anahtari = os.path.normcase(os.path.normpath(seri_port))
+    with _PORT_KILITLERI_KILIDI:
+        if kilit_anahtari not in _PORT_KILITLERI:
+            _PORT_KILITLERI[kilit_anahtari] = threading.Lock()
+        return _PORT_KILITLERI[kilit_anahtari]
+
+
+def _seri_portu_dogrula(seri_port):
+    seri_port = str(seri_port or "").strip()
+    if not seri_port or len(seri_port) > 128 or any(ord(karakter) < 32 for karakter in seri_port):
+        raise KantarHatasi("Seri port adi gecersiz.", [
+            "Ayarlar sayfasindan Windows tarafindan listelenen bir COM port secin.",
+        ])
+    return seri_port
 
 
 def ham_veriyi_duzenle(ham_veri):
@@ -36,7 +58,11 @@ def agirlik_degerini_ayikla(ham_metin, ayarlar=None):
             "Gerekirse seri zaman asimi degerini artirin.",
         ])
 
-    izinli_baslangic_bitleri = tuple(ayarlar.get("baslangic_bitleri", "A,@").split(","))
+    izinli_baslangic_bitleri = tuple(
+        bit.strip()
+        for bit in ayarlar.get("baslangic_bitleri", "A,@").split(",")
+        if bit.strip()
+    )
     agirlik_baslangic_indeksi = ayar_int(ayarlar, "agirlik_baslangic_indeksi")
     agirlik_bitis_indeksi = ayar_int(ayarlar, "agirlik_bitis_indeksi")
     baslangic_biti = ham_metin[0]
@@ -60,7 +86,7 @@ def agirlik_degerini_ayikla(ham_metin, ayarlar=None):
             "Seri okuma boyutu ham veriyi tam okuyacak kadar buyuk olmali.",
         ], "Gelen veri: %r" % ham_metin)
 
-    eslesmeler = re.findall(r"\d+(?:[,.]\d+)?", agirlik_metni)
+    eslesmeler = re.findall(r"[-+]?\d+(?:[,.]\d+)?", agirlik_metni)
     if not eslesmeler:
         raise KantarHatasi("Agirlik alaninda sayisal deger bulunamadi.", [
             "Kantar ekraninda stabil tartim oldugunu kontrol edin.",
@@ -77,32 +103,32 @@ def agirlik_degerini_ayikla(ham_metin, ayarlar=None):
 def seri_baglantidan_oku(ayarlar):
     if serial is None:
         raise KantarHatasi("pyserial paketi kurulu degil.", ["Komut satirinda pip install pyserial calistirin."])
-    seri_port = ayarlar.get("seri_port", "COM2")
+    seri_port = _seri_portu_dogrula(ayarlar.get("seri_port", "COM2"))
     seri_baud_hizi = ayar_int(ayarlar, "seri_baud_hizi")
     seri_zaman_asimi = ayar_float(ayarlar, "seri_zaman_asimi")
     seri_okuma_boyutu = ayar_int(ayarlar, "seri_okuma_boyutu")
-    seri_baglanti = None
-    try:
-        seri_baglanti = serial.Serial(seri_port, seri_baud_hizi, timeout=seri_zaman_asimi)
-        return seri_baglanti.readline(seri_okuma_boyutu)
-    finally:
-        if seri_baglanti is not None:
-            seri_baglanti.close()
+    with _port_kilidi(seri_port):
+        seri_baglanti = None
+        try:
+            seri_baglanti = serial.Serial(seri_port, seri_baud_hizi, timeout=seri_zaman_asimi)
+            return seri_baglanti.readline(seri_okuma_boyutu)
+        except KantarHatasi:
+            raise
+        except Exception as hata:
+            raise KantarHatasi("Seri port baglantisi kurulamadi.", [
+                "Ayarlar sayfasindan seri port ayarini kontrol edin. Windows icin ornek: COM2.",
+                "Port baska bir program tarafindan kullaniliyor olabilir; diger kantar programlarini kapatin.",
+                "USB/RS232 donusturucu surucusunun yuklu oldugunu kontrol edin.",
+                "Baud hizi ayarinin cihazla ayni oldugunu kontrol edin.",
+            ], str(hata))
+        finally:
+            if seri_baglanti is not None:
+                seri_baglanti.close()
 
 
 def kantar_degerini_oku(profil=None):
     ayarlar = ayarlari_oku(profil)
-    try:
-        ham_veri = seri_baglantidan_oku(ayarlar)
-    except KantarHatasi:
-        raise
-    except Exception as hata:
-        raise KantarHatasi("Seri port baglantisi kurulamadi.", [
-            "127.0.0.1/ayarlar sayfasindan seri port ayarini kontrol edin. Windows icin ornek: COM2.",
-            "Port baska bir program tarafindan kullaniliyor olabilir; kantar programlarini kapatip tekrar deneyin.",
-            "USB/RS232 donusturucu surucusunun yuklu oldugunu kontrol edin.",
-            "Baud hizi ayarinin cihazla ayni oldugunu kontrol edin.",
-        ], str(hata))
+    ham_veri = seri_baglantidan_oku(ayarlar)
     ham_metin = ham_veriyi_duzenle(ham_veri)
     gunluge_yaz("Kantardan Gelen veri: " + ham_metin)
     return agirlik_degerini_ayikla(ham_metin, ayarlar)

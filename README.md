@@ -22,11 +22,35 @@ Varsayilan servis adresi `http://127.0.0.1`:
 | Tekli kantar | `http://127.0.0.1/` |
 | Kantar 1 | `http://127.0.0.1/?profil=kantar1` |
 | Kantar 2 | `http://127.0.0.1/?profil=kantar2` |
+| JSON agirlik API | `http://127.0.0.1/api/v1/agirlik?profil=kantar1` |
 | Ayarlar | `http://127.0.0.1/ayarlar` |
 | Serial izleme | `http://127.0.0.1/serial` |
 | Loglar | `http://127.0.0.1/loglar` |
 | Surum ve guncelleme | `http://127.0.0.1/sistem` |
 | Saglik kontrolu | `http://127.0.0.1/saglik` |
+
+Duz metin `/` endpointi mevcut entegrasyonlarla uyumluluk icin korunur. Yeni entegrasyonlarda durum kodu, profil, agirlik ve hata alanlarini birlikte sunan `/api/v1/agirlik` endpointi tercih edilmelidir.
+
+Basarili JSON yaniti:
+
+```json
+{
+  "ok": true,
+  "profil": "kantar1",
+  "agirlik": "125",
+  "zaman": "2026-06-13T14:30:00"
+}
+```
+
+## Guvenlik Modeli
+
+- HTTP sunucusu yalnizca yerel makine adreslerine baglanir.
+- Yonetim panelindeki ayar kaydetme ve log temizleme islemleri CSRF korumalidir.
+- Tarayici guvenlik basliklari ve katı Content Security Policy etkindir.
+- Agirlik endpointlerine CORS erisimi yalnizca `https://*.lisdep.com` ve yerel gelistirme originleri icin verilir.
+- Servis host ayari guvenlik nedeniyle bir loopback adresi olmalidir.
+
+Servisin yerel agdaki baska bilgisayarlara acilmasi desteklenmez. Bu ihtiyac icin kimlik dogrulamali ayri bir ag gecidi kullanilmalidir.
 
 ## Yerel Veriler
 
@@ -39,6 +63,8 @@ Ayarlar ve loglar uygulama kurulum klasorunden ayri tutulur:
 ```
 
 Eski `C:\kantar\kantar-ayarlar.sqlite` dosyasi varsa ilk calistirmada otomatik olarak yeni konuma kopyalanir. Guncelleme ve kaldirma islemleri kullanici ayarlarini silmez.
+
+Seri port, baud hizi ve veri ayiklama ayarlari profil bazindadir. Servis host ve port ayarlari ise calisan HTTP sunucusu tek oldugu icin tum profillerde ortaktir.
 
 Ortam degiskenleri:
 
@@ -91,6 +117,15 @@ Workflow su dosyalari GitHub Release varligi olarak yayinlar:
 - `SHA256SUMS.txt`
 
 Etiket ile uygulama surumu eslesmezse release islemi durur. CI hem Linux hem Windows uzerinde testleri, CSS uretimini ve Python paketini dogrular.
+
+GitHub Actions calisma izinleri veya hesap faturalandirmasi devre disiysa otomatik paketleme baslamaz. Bu durumda once depo Actions erisimi duzeltilmeli, ardindan ayni etiketin workflow'u yeniden calistirilmalidir.
+
+## Sorun Giderme
+
+- Servis acilmiyorsa `%LOCALAPPDATA%\Kantar Servisi\kantar-servis.log` dosyasini kontrol edin.
+- Port 80 baska bir program tarafindan kullaniliyorsa panelden 8090 gibi bos bir yerel port secin ve sistem tepsisi menusunden servisi yeniden baslatin.
+- COM port gorunmuyorsa USB/RS232 surucusunu ve Windows Aygit Yoneticisi'ni kontrol edin.
+- GitHub surum kontrolu gecici ag hatalarini kisa sure onbellege alir; Sistem ekranindaki **Surumu Yeniden Kontrol Et** baglantisi onbellegi atlar.
 
 ## Kod Imzalama
 

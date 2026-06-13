@@ -1,5 +1,0 @@
-Flask<4,>=3.0
-Pillow<13,>=10
-pyserial<4,>=3.5
-pystray<1,>=0.19
-waitress<4,>=3.0

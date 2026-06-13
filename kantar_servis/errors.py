@@ -15,3 +15,9 @@ class KantarHatasi(Exception):
         if self.teknik_detay:
             satirlar.append("Teknik detay: " + self.teknik_detay)
         return "\n".join(satirlar)
+
+
+class AyarDogrulamaHatasi(KantarHatasi):
+    def __init__(self, hatalar):
+        self.hatalar = list(hatalar)
+        super().__init__("Ayarlar kaydedilemedi.", self.hatalar)

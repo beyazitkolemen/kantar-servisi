@@ -3,7 +3,20 @@ import os
 import shutil
 import sqlite3
 
-from .config import AYAR_ALANLARI, klasor_olustur, ayar_db_yolu, profil_normalize, secili_profil, profil_varsayilanlari
+from .config import (
+    AYAR_ALANLARI,
+    PROFILLER,
+    PROFIL_TEKLI,
+    SERVIS_AYARLARI,
+    ayar_db_yolu,
+    ayarlari_dogrula,
+    klasor_olustur,
+    profil_normalize,
+    profil_varsayilanlari,
+    secili_profil,
+)
+
+SERVIS_PROFILI = "__servis__"
 
 
 def eski_ayar_db_yolu():
@@ -29,22 +42,26 @@ def baglanti_ac():
     db_yolu = ayar_db_yolu()
     klasor_olustur(os.path.dirname(db_yolu))
     baglanti = sqlite3.connect(db_yolu, timeout=10)
-    baglanti.execute("PRAGMA busy_timeout = 10000")
-    baglanti.execute(
-        "CREATE TABLE IF NOT EXISTS kantar_ayarlar ("
-        "profil TEXT NOT NULL, "
-        "anahtar TEXT NOT NULL, "
-        "deger TEXT NOT NULL, "
-        "PRIMARY KEY (profil, anahtar)"
-        ")"
-    )
-    return baglanti
+    try:
+        baglanti.execute("PRAGMA busy_timeout = 10000")
+        baglanti.execute("PRAGMA journal_mode = WAL")
+        baglanti.execute(
+            "CREATE TABLE IF NOT EXISTS kantar_ayarlar ("
+            "profil TEXT NOT NULL, "
+            "anahtar TEXT NOT NULL, "
+            "deger TEXT NOT NULL, "
+            "PRIMARY KEY (profil, anahtar)"
+            ")"
+        )
+        return baglanti
+    except Exception:
+        baglanti.close()
+        raise
 
 
 def ayarlari_baslat():
     baglanti = baglanti_ac()
     try:
-        from .config import PROFILLER
         for profil in PROFILLER:
             varsayilanlar = profil_varsayilanlari(profil)
             for anahtar, deger in varsayilanlar.items():
@@ -52,6 +69,18 @@ def ayarlari_baslat():
                     "INSERT OR IGNORE INTO kantar_ayarlar (profil, anahtar, deger) VALUES (?, ?, ?)",
                     (profil, anahtar, str(deger))
                 )
+        kaynak_profil = secili_profil()
+        for anahtar in SERVIS_AYARLARI:
+            imlec = baglanti.execute(
+                "SELECT deger FROM kantar_ayarlar WHERE profil = ? AND anahtar = ?",
+                (kaynak_profil, anahtar),
+            )
+            satir = imlec.fetchone()
+            deger = satir[0] if satir else profil_varsayilanlari(PROFIL_TEKLI)[anahtar]
+            baglanti.execute(
+                "INSERT OR IGNORE INTO kantar_ayarlar (profil, anahtar, deger) VALUES (?, ?, ?)",
+                (SERVIS_PROFILI, anahtar, str(deger)),
+            )
         baglanti.commit()
     finally:
         baglanti.close()
@@ -67,6 +96,12 @@ def ayarlari_oku(profil=None):
         imlec = baglanti.execute("SELECT anahtar, deger FROM kantar_ayarlar WHERE profil = ?", (profil,))
         for anahtar, deger in imlec.fetchall():
             ayarlar[anahtar] = deger
+        imlec = baglanti.execute(
+            "SELECT anahtar, deger FROM kantar_ayarlar WHERE profil = ?",
+            (SERVIS_PROFILI,),
+        )
+        for anahtar, deger in imlec.fetchall():
+            ayarlar[anahtar] = deger
     finally:
         baglanti.close()
     return ayarlar
@@ -74,17 +109,21 @@ def ayarlari_oku(profil=None):
 
 def ayarlari_kaydet(profil, ayarlar):
     profil = profil_normalize(profil, secili_profil())
+    normalize = ayarlari_dogrula(ayarlar)
     ayarlari_baslat()
     baglanti = baglanti_ac()
     try:
         for anahtar, _label, _tip in AYAR_ALANLARI:
+            hedef_profil = SERVIS_PROFILI if anahtar in SERVIS_AYARLARI else profil
             baglanti.execute(
                 "INSERT OR REPLACE INTO kantar_ayarlar (profil, anahtar, deger) VALUES (?, ?, ?)",
-                (profil, anahtar, str(ayarlar.get(anahtar, "")))
+                (hedef_profil, anahtar, normalize[anahtar])
             )
         baglanti.commit()
     finally:
         baglanti.close()
+    normalize["_profil"] = profil
+    return normalize
 
 
 def sqlite_durumu_oku():

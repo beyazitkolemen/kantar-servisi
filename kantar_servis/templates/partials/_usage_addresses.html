@@ -1,9 +1,10 @@
 <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
   <h2 class="text-base font-bold text-slate-900">Kullanim Adresleri</h2>
   <div class="mt-3 space-y-3 text-sm">
-    <div><p class="font-semibold text-slate-600">Tekli</p><code class="block overflow-x-auto rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">http://127.0.0.1</code></div>
-    <div><p class="font-semibold text-slate-600">Kantar 1</p><code class="block overflow-x-auto rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">http://127.0.0.1/?profil=kantar1</code></div>
-    <div><p class="font-semibold text-slate-600">Kantar 2</p><code class="block overflow-x-auto rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">http://127.0.0.1/?profil=kantar2</code></div>
-    <div><p class="font-semibold text-slate-600">Profil Ayari</p><code class="block overflow-x-auto rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">http://127.0.0.1/ayarlar?profil={{ profil }}</code></div>
+    <div><p class="font-semibold text-slate-600">Tekli</p><code class="block overflow-x-auto rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">{{ servis_url }}/</code></div>
+    <div><p class="font-semibold text-slate-600">Kantar 1</p><code class="block overflow-x-auto rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">{{ servis_url }}/?profil=kantar1</code></div>
+    <div><p class="font-semibold text-slate-600">Kantar 2</p><code class="block overflow-x-auto rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">{{ servis_url }}/?profil=kantar2</code></div>
+    <div><p class="font-semibold text-slate-600">JSON API</p><code class="block overflow-x-auto rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">{{ servis_url }}/api/v1/agirlik?profil={{ profil }}</code></div>
+    <div><p class="font-semibold text-slate-600">Profil Ayari</p><code class="block overflow-x-auto rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">{{ servis_url }}/ayarlar?profil={{ profil }}</code></div>
   </div>
 </div>

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -87,20 +88,29 @@ class MasaustuUygulamasi:
                 return False
             try:
                 with urllib.request.urlopen(saglik_url, timeout=1) as cevap:
-                    if cevap.status == 200:
+                    veri = json.loads(cevap.read(65537).decode("utf-8"))
+                    if (
+                        cevap.status == 200
+                        and veri.get("ok") is True
+                        and veri.get("uygulama") == "Kantar Servisi"
+                    ):
                         return True
-            except (urllib.error.URLError, OSError):
+            except (urllib.error.URLError, OSError, ValueError, json.JSONDecodeError):
                 time.sleep(0.25)
         return False
 
     def sunucuyu_baslat(self):
         ayarlari_baslat()
         olusturma_bayraklari = CREATE_NO_WINDOW if os.name == "nt" else 0
-        self.sunucu = subprocess.Popen(
-            sunucu_komutu(),
-            cwd=os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else None,
-            creationflags=olusturma_bayraklari,
-        )
+        popen_ayarlari = {
+            "cwd": os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else None,
+            "creationflags": olusturma_bayraklari,
+        }
+        if getattr(sys, "frozen", False):
+            popen_ayarlari["stdin"] = subprocess.DEVNULL
+            popen_ayarlari["stdout"] = subprocess.DEVNULL
+            popen_ayarlari["stderr"] = subprocess.DEVNULL
+        self.sunucu = subprocess.Popen(sunucu_komutu(), **popen_ayarlari)
         if self.servis_hazir_mi():
             gunluge_yaz("Masaustu uygulamasi servisi hazir: %s" % self.servis_url())
             return True
@@ -204,8 +214,7 @@ def main(argv=None):
         return 0
     if args.server or os.name != "nt":
         from .web import calistir
-        calistir()
-        return 0
+        return calistir()
 
     ayarlari_baslat()
     kilit = tek_ornek_kilidi_al()

@@ -1,2 +1,0 @@
-[console_scripts]
-kantar-servisi = kantar_servis.desktop:main

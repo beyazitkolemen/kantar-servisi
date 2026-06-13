@@ -13,6 +13,10 @@ class FakeResponse(io.BytesIO):
         self.close()
 
 
+def setup_function():
+    updates.guncelleme_onbellegini_temizle()
+
+
 def test_surum_karsilastirma():
     assert updates.daha_yeni_surum_var("1.0.0", "v1.1.0") is True
     assert updates.daha_yeni_surum_var("1.2.0", "v1.1.9") is False
@@ -69,3 +73,34 @@ def test_henuz_release_yoksa_anlasilir_durum_doner(monkeypatch):
     assert sonuc["ok"] is False
     assert sonuc["release_yok"] is True
     assert "Henuz GitHub" in sonuc["mesaj"]
+
+
+def test_github_surum_sonucu_onbellekten_doner(monkeypatch):
+    cagri_sayisi = {"deger": 0}
+    veri = {"tag_name": "v1.0.0", "assets": []}
+
+    def cevap_ver(_request, timeout):
+        cagri_sayisi["deger"] += 1
+        return FakeResponse(json.dumps(veri).encode("utf-8"))
+
+    monkeypatch.setattr(updates.urllib.request, "urlopen", cevap_ver)
+
+    updates.son_surumu_kontrol_et()
+    updates.son_surumu_kontrol_et()
+    updates.son_surumu_kontrol_et(zorla=True)
+
+    assert cagri_sayisi["deger"] == 2
+
+
+def test_bozuk_asset_listesi_sistem_sayfasini_dusurmez(monkeypatch):
+    veri = {"tag_name": "v1.0.0", "assets": {"name": "gecersiz"}}
+    monkeypatch.setattr(
+        updates.urllib.request,
+        "urlopen",
+        lambda _request, timeout: FakeResponse(json.dumps(veri).encode("utf-8")),
+    )
+
+    sonuc = updates.son_surumu_kontrol_et()
+
+    assert sonuc["ok"] is True
+    assert sonuc["kurulum_url"].endswith("/releases/latest/download/Kantar-Servisi-Setup.exe")

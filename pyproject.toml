@@ -8,6 +8,17 @@ dynamic = ["version"]
 description = "Windows seri port uzerinden kantar verisi sunan yerel HTTP servisi"
 readme = "README.md"
 requires-python = ">=3.9"
+keywords = ["kantar", "serial", "windows", "lisdep"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Win32 (MS Windows)",
+    "Framework :: Flask",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Operating System :: Microsoft :: Windows :: Windows 11",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: System :: Hardware",
+]
 dependencies = [
     "Flask>=3.0,<4",
     "Pillow>=10,<13",
@@ -36,6 +47,7 @@ kantar_servis = [
     "templates/*.html",
     "templates/partials/*.html",
     "static/*.css",
+    "static/*.js",
 ]
 
 [tool.pytest.ini_options]

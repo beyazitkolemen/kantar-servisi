@@ -1,4 +1,7 @@
+import pytest
+
 from kantar_servis import config
+from kantar_servis.errors import AyarDogrulamaHatasi
 
 
 def test_veri_dizini_environment_override(monkeypatch, tmp_path):
@@ -22,3 +25,35 @@ def test_yerel_servis_url_default_portu_gizler(monkeypatch):
     monkeypatch.delenv("KANTAR_SERVIS_PORT", raising=False)
 
     assert config.yerel_servis_url({"servis_host": "127.0.0.1", "servis_port": "80"}) == "http://127.0.0.1"
+
+
+def test_ayarlar_normalize_edilir():
+    ayarlar = dict(config.VARSAYILAN_AYARLAR[config.PROFIL_TEKLI])
+    ayarlar["seri_zaman_asimi"] = "2,5"
+    ayarlar["baslangic_bitleri"] = " A, @,A "
+    ayarlar["servis_host"] = "::1"
+
+    sonuc = config.ayarlari_dogrula(ayarlar)
+
+    assert sonuc["seri_zaman_asimi"] == "2.5"
+    assert sonuc["baslangic_bitleri"] == "A,@"
+    assert config.yerel_servis_url(sonuc) == "http://[::1]"
+
+
+def test_gecersiz_ayarlar_reddedilir():
+    ayarlar = dict(config.VARSAYILAN_AYARLAR[config.PROFIL_TEKLI])
+    ayarlar["servis_host"] = "0.0.0.0"
+    ayarlar["servis_port"] = "70000"
+
+    with pytest.raises(AyarDogrulamaHatasi) as hata:
+        config.ayarlari_dogrula(ayarlar)
+
+    assert len(hata.value.hatalar) == 2
+
+
+def test_nan_zaman_asimi_reddedilir():
+    ayarlar = dict(config.VARSAYILAN_AYARLAR[config.PROFIL_TEKLI])
+    ayarlar["seri_zaman_asimi"] = "nan"
+
+    with pytest.raises(AyarDogrulamaHatasi):
+        config.ayarlari_dogrula(ayarlar)

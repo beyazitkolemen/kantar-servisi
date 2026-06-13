@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   windows-release:
-    runs-on: windows-latest
+    runs-on: windows-2025
     env:
       WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
       WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
@@ -48,7 +48,10 @@ jobs:
           python scripts/generate_build_assets.py
 
       - name: Testleri calistir
-        run: python -m pytest
+        run: |
+          python -m pip check
+          python -m compileall -q kantar_servis tests
+          python -m pytest
 
       - name: Windows uygulamasini paketle
         run: pyinstaller --clean --noconfirm KantarServisi.spec
@@ -61,13 +64,13 @@ jobs:
           $process = Start-Process ".\dist\KantarServisi\KantarServisi.exe" -ArgumentList "--server" -PassThru
           try {
             $hazir = $false
-            1..80 | ForEach-Object {
+            for ($deneme = 0; $deneme -lt 80; $deneme++) {
               Start-Sleep -Milliseconds 250
               try {
                 $cevap = Invoke-RestMethod "http://127.0.0.1:18080/saglik" -TimeoutSec 2
                 if ($cevap.ok -eq $true) {
                   $hazir = $true
-                  return
+                  break
                 }
               } catch {
               }
