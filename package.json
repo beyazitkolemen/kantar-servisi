@@ -5,6 +5,6 @@
     "build:css": "tailwindcss -c tailwind.config.js -i assets/tailwind-input.css -o kantar_servis/static/app.css --minify"
   },
   "devDependencies": {
-    "tailwindcss": "3.4.17"
+    "tailwindcss": "4.3.1"
   }
 }
