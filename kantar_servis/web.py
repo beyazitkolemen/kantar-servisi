@@ -205,7 +205,7 @@ def sorun_giderme_maddeleri():
         {"baslik": "Port kullanimda hatasi", "aciklama": "Ayni COM portu kullanan diger kantar programlarini kapatin. Gerekirse servisi kapatip tekrar baslatin."},
         {"baslik": "SQLite ayari kaydedilemiyor", "aciklama": "Sistem sayfasindaki yerel veri klasorunun yazilabilir oldugunu kontrol edin ve uygulamayi yeniden baslatin."},
         {"baslik": "Ayarlar sayfasi acilmiyor", "aciklama": "Kantar servisi calisiyor mu kontrol edin. Tek servis adresi http://127.0.0.1/ayarlar seklindedir; Kantar 2 icin port degil ?profil=kantar2 parametresi kullanilir."},
-        {"baslik": "Program dosyasi eksik", "aciklama": "GitHub Releases sayfasindaki son Windows kurulum dosyasini indirip uygulamayi yeniden kurun. Ayarlariniz korunur."},
+        {"baslik": "Program dosyasi eksik", "aciklama": "GitHub deposundaki downloads klasorunden son Windows kurulum dosyasini indirip uygulamayi yeniden kurun. Ayarlariniz korunur."},
     ]
 
 

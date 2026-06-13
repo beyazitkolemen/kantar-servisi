@@ -6,12 +6,26 @@ Kantar Servisi, Windows bilgisayardaki seri porttan kantar verisini okuyup yerel
 
 Desteklenen sistem: Windows 10/11 x64.
 
-1. [Son Windows kurulum dosyasini indirin](https://github.com/beyazitkolemen/kantar-servisi/releases/latest/download/Kantar-Servisi-Setup.exe).
+1. [Hazir Windows kurulum dosyasini indirin](https://raw.githubusercontent.com/beyazitkolemen/kantar-servisi/main/downloads/Kantar-Servisi-Setup.exe).
 2. `Kantar-Servisi-Setup.exe` dosyasini calistirin.
 3. Baslat menusundeki **Kantar Servisi** kisayolunu acin.
 4. Sistem tepsisi simgesinden yonetim panelini, log klasorunu ve servis yeniden baslatma islemini yonetin.
 
-Ilk GitHub Release yayinlanmadan sabit indirme baglantisi `404` doner. Release olustugunda ayni baglanti her zaman son kararli kurulum dosyasini indirir.
+Kurulum dosyasi GitHub Actions veya GitHub Releases tarafinda uretilmez. Yerelde derlenip test edildikten sonra `downloads/Kantar-Servisi-Setup.exe` olarak dogrudan depoya eklenir.
+
+## Windows Masaustu Deneyimi
+
+Uygulama Python konsolu veya `.bat` dosyasi gostermeden Windows sistem tepsisinde calisir.
+
+- Tepsi menusunde canli servis durumu gorunur.
+- Yonetim paneli, serial izleme, loglar ve sistem ekrani ayri kisayollardan acilir.
+- Servis beklenmedik sekilde kapanirsa masaustu uygulamasi durumu bildirir ve bir kez otomatik yeniden baslatmayi dener.
+- **Servisi Yeniden Baslat** islemi arka planda calisir; tepsi menusu donmaz.
+- **Tanilama Raporu Olustur** secenegi surum, servis sagligi, dosya yollari, COM portlari ve profil ayarlarini tek metin dosyasinda toplar.
+- Ayni kullanici oturumunda yalnizca bir Kantar Servisi tepsi uygulamasi calisir. Ikinci acilis mevcut servisin panelini acar.
+- Windows acilisinda calistirma ve masaustu kisayolu kurulum ekranindan secilebilir.
+
+Baslat menusu ayrica yonetim paneli, log klasoru, tanilama raporu ve kaldirma kisayollarini icerir. Kurulum kullanici bazlidir ve yonetici yetkisi istemez.
 
 ## Adresler
 
@@ -97,41 +111,58 @@ Kaynak koddan yalnizca HTTP servisini calistirmak icin:
 python -m kantar_servis --server
 ```
 
-## GitHub Release Akisi
-
-`.github/workflows/release.yml`, `v*` etiketi push edildiginde Windows kurulumunu otomatik olusturur.
-
-1. `kantar_servis/__init__.py` icindeki `__version__` degerini guncelleyin.
-2. Degisiklikleri `main` dalina alin.
-3. Ayni surumle etiket olusturup push edin:
+Masaustu/otomasyon komutlari:
 
 ```powershell
-git tag v1.0.0
-git push origin v1.0.0
+KantarServisi.exe --open-panel
+KantarServisi.exe --open-logs
+KantarServisi.exe --diagnostics
+KantarServisi.exe --health-check
 ```
 
-Workflow su dosyalari GitHub Release varligi olarak yayinlar:
+`--health-check`, servis hazirsa `0`, erisilemiyorsa `1` cikis kodu verir.
 
-- `Kantar-Servisi-Setup.exe`
-- `Kantar-Servisi-Portable.zip`
-- `SHA256SUMS.txt`
+## Yerel Windows Build
 
-Etiket ile uygulama surumu eslesmezse release islemi durur. CI hem Linux hem Windows uzerinde testleri, CSS uretimini ve Python paketini dogrular.
+Windows kurulum dosyasi GitHub tarafinda olusturulmaz. Docker calisan macOS, Linux veya Windows gelistirme makinesinde su komut kullanilir:
 
-GitHub Actions calisma izinleri veya hesap faturalandirmasi devre disiysa otomatik paketleme baslamaz. Bu durumda once depo Actions erisimi duzeltilmeli, ardindan ayni etiketin workflow'u yeniden calistirilmalidir.
+```powershell
+python scripts/build_windows_local.py
+```
+
+Komut sirasiyla CSS dosyasini, uygulama ikonlarini, SHA256 ile dogrulanan resmi Windows Python 3.12 calisma zamanini, sabitlenmis Windows bagimliliklarini, x64 `KantarServisi.exe` baslaticisini ve NSIS kurulumunu uretir. Hedef bilgisayarda Python, Docker veya `.bat` dosyasi gerekmez.
+
+Olusan ve Git ile birlikte gonderilmesi gereken dosyalar:
+
+- `downloads/Kantar-Servisi-Setup.exe`
+- `downloads/latest.json`
+- `downloads/SHA256SUMS.txt`
+
+`latest.json`, uygulamanin Sistem ekraninda kullandigi surum ve SHA256 bilgisidir. Build islemi kurulum dosyasinin gercek Windows PE formati tasidigini ve GitHub'in 100 MiB tek dosya sinirini asmadigini otomatik denetler.
+
+Yeni bir surum yayinlama adimlari:
+
+1. `kantar_servis/__init__.py` icindeki `__version__` degerini guncelleyin.
+2. `python -m pytest` komutunu calistirin.
+3. `python scripts/build_windows_local.py` komutuyla Windows paketini yerelde olusturun.
+4. `downloads/` altindaki EXE, manifest ve checksum dosyalarini kaynak kodla ayni commit icinde GitHub'a gonderin.
+
+Gercek bir Windows makinede kurulum, servis, HTTP guvenligi ve kaldirma akisini yeniden denetlemek icin:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\windows_installer_smoke_test.ps1 -Installer downloads\Kantar-Servisi-Setup.exe
+```
+
+Depoda `.github/workflows` bulunmaz ve GitHub Actions kullanilmaz.
 
 ## Sorun Giderme
 
 - Servis acilmiyorsa `%LOCALAPPDATA%\Kantar Servisi\kantar-servis.log` dosyasini kontrol edin.
+- Sistem tepsisi menusunden **Tanilama Raporu Olustur** secenegini kullanarak destek raporu olusturun.
 - Port 80 baska bir program tarafindan kullaniliyorsa panelden 8090 gibi bos bir yerel port secin ve sistem tepsisi menusunden servisi yeniden baslatin.
 - COM port gorunmuyorsa USB/RS232 surucusunu ve Windows Aygit Yoneticisi'ni kontrol edin.
-- GitHub surum kontrolu gecici ag hatalarini kisa sure onbellege alir; Sistem ekranindaki **Surumu Yeniden Kontrol Et** baglantisi onbellegi atlar.
+- GitHub paket manifesti kontrolu gecici ag hatalarini kisa sure onbellege alir; Sistem ekranindaki **Surumu Yeniden Kontrol Et** baglantisi onbellegi atlar.
 
 ## Kod Imzalama
 
-Windows imzalama sertifikasi varsa depo ayarlarinda su Actions secret degerlerini tanimlayin:
-
-- `WINDOWS_CERTIFICATE_BASE64`: PFX dosyasinin Base64 icerigi
-- `WINDOWS_CERTIFICATE_PASSWORD`: PFX parolasi
-
-Secret degerleri yoksa paket uretilir ancak Windows SmartScreen imzalanmamis uygulama uyarisi gosterebilir.
+Mevcut kurulum dosyasi sertifika ile imzalanmadiysa Windows SmartScreen ilk calistirmada bilinmeyen yayinci uyarisi gosterebilir. Kod imzalama sertifikasi kullanilacaksa imzalama islemi yerel build sonrasinda, EXE GitHub'a gonderilmeden once yapilmalidir.

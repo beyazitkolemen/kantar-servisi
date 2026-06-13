@@ -8,8 +8,10 @@ from .errors import AyarDogrulamaHatasi
 UYGULAMA_ADI = "Kantar Servisi"
 GITHUB_REPO = "beyazitkolemen/kantar-servisi"
 GITHUB_REPO_URL = "https://github.com/%s" % GITHUB_REPO
-GITHUB_RELEASES_URL = "%s/releases" % GITHUB_REPO_URL
-GITHUB_LATEST_INSTALLER_URL = "%s/latest/download/Kantar-Servisi-Setup.exe" % GITHUB_RELEASES_URL
+GITHUB_DOWNLOADS_URL = "%s/tree/main/downloads" % GITHUB_REPO_URL
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/%s/main" % GITHUB_REPO
+GITHUB_UPDATE_MANIFEST_URL = "%s/downloads/latest.json" % GITHUB_RAW_URL
+GITHUB_LATEST_INSTALLER_URL = "%s/downloads/Kantar-Servisi-Setup.exe" % GITHUB_RAW_URL
 
 PROFIL_TEKLI = "tekli"
 PROFIL_KANTAR1 = "kantar1"

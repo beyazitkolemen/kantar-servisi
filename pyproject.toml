@@ -29,7 +29,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/beyazitkolemen/kantar-servisi"
-Releases = "https://github.com/beyazitkolemen/kantar-servisi/releases"
+Download = "https://raw.githubusercontent.com/beyazitkolemen/kantar-servisi/main/downloads/Kantar-Servisi-Setup.exe"
 Issues = "https://github.com/beyazitkolemen/kantar-servisi/issues"
 
 [project.scripts]

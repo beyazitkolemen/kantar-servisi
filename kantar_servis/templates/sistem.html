@@ -13,8 +13,8 @@
             <span class="w-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">Yeni surum: v{{ guncelleme.son_surum }}</span>
           {% elif guncelleme.ok %}
             <span class="w-fit rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">Guncel</span>
-          {% elif guncelleme.release_yok %}
-            <span class="w-fit rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">Ilk surum bekleniyor</span>
+          {% elif guncelleme.paket_yok %}
+            <span class="w-fit rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">Paket bekleniyor</span>
           {% else %}
             <span class="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Kontrol edilemedi</span>
           {% endif %}
@@ -22,7 +22,7 @@
 
         {% if guncelleme.ok %}
           <p class="mt-4 text-sm text-slate-600">
-            GitHub uzerindeki son kararli surum v{{ guncelleme.son_surum }}.
+            GitHub deposundaki hazir Windows paketi v{{ guncelleme.son_surum }}.
             {% if guncelleme.yayin_tarihi %}Yayin tarihi: {{ guncelleme.yayin_tarihi }}.{% endif %}
           </p>
         {% else %}
@@ -31,15 +31,19 @@
 
         <div class="mt-5 flex flex-wrap gap-3">
           <a href="{{ guncelleme.kurulum_url }}" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Windows Kurulumunu Indir</a>
-          <a href="{{ guncelleme.surumler_url }}" target="_blank" rel="noopener noreferrer" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">GitHub Surumlerini Ac</a>
+          <a href="{{ guncelleme.surumler_url }}" target="_blank" rel="noopener noreferrer" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">GitHub Indirme Klasorunu Ac</a>
           <a href="/sistem?profil={{ profil }}&yenile=1" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">Surumu Yeniden Kontrol Et</a>
         </div>
+        {% if guncelleme.sha256 %}
+          <p class="mt-4 text-xs text-slate-500">SHA256</p>
+          <code class="mt-1 block overflow-x-auto rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700 ring-1 ring-slate-200">{{ guncelleme.sha256 }}</code>
+        {% endif %}
       </section>
 
       <section class="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-700">
         <h2 class="font-bold text-slate-900">Guncelleme Adimlari</h2>
         <ol class="mt-3 list-decimal space-y-2 pl-5">
-          <li>Windows kurulum dosyasini GitHub Releases uzerinden indirin.</li>
+          <li>Windows kurulum dosyasini GitHub deposundaki downloads klasorunden indirin.</li>
           <li>Sistem tepsisindeki Kantar Servisi simgesine sag tiklayip Cikis secenegini kullanin.</li>
           <li>Kurulum dosyasini calistirin. Mevcut ayarlar ve loglar korunur.</li>
           <li>Kurulum tamamlandiginda uygulamayi yeniden baslatin.</li>
@@ -50,7 +54,7 @@
     <aside class="space-y-4">
       <section class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
         <h2 class="font-bold text-slate-900">Dagitim Kaynagi</h2>
-        <p class="mt-2">Kurulum dosyalari ve surum notlari yalnizca resmi GitHub deposundan yayinlanir.</p>
+        <p class="mt-2">Kurulum dosyasi yerelde derlenir, test edilir ve resmi GitHub deposuna hazir halde eklenir.</p>
         <a href="{{ github_repo_url }}" target="_blank" rel="noopener noreferrer" class="mt-3 block break-all rounded-lg bg-white px-3 py-2 text-xs font-semibold text-blue-700 ring-1 ring-slate-200">{{ github_repo_url }}</a>
       </section>
 

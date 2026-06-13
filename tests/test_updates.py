@@ -23,17 +23,12 @@ def test_surum_karsilastirma():
     assert updates.daha_yeni_surum_var("dev", "v1.1.0") is False
 
 
-def test_github_surum_bilgisi(monkeypatch):
+def test_github_manifest_bilgisi(monkeypatch):
     veri = {
-        "tag_name": "v1.2.0",
-        "html_url": "https://github.com/beyazitkolemen/kantar-servisi/releases/tag/v1.2.0",
-        "published_at": "2026-06-13T12:00:00Z",
-        "assets": [
-            {
-                "name": "Kantar-Servisi-Setup.exe",
-                "browser_download_url": "https://example.test/Kantar-Servisi-Setup.exe",
-            }
-        ],
+        "version": "1.2.0",
+        "published_at": "2026-06-13",
+        "installer": "Kantar-Servisi-Setup.exe",
+        "sha256": "a" * 64,
     }
     monkeypatch.setattr(
         updates.urllib.request,
@@ -46,7 +41,8 @@ def test_github_surum_bilgisi(monkeypatch):
     assert sonuc["ok"] is True
     assert sonuc["son_surum"] == "1.2.0"
     assert sonuc["guncelleme_var"] is True
-    assert sonuc["kurulum_url"] == "https://example.test/Kantar-Servisi-Setup.exe"
+    assert sonuc["kurulum_url"].endswith("/main/downloads/Kantar-Servisi-Setup.exe")
+    assert sonuc["sha256"] == "a" * 64
 
 
 def test_github_hatasi_kurulum_baglantisini_korur(monkeypatch):
@@ -59,25 +55,29 @@ def test_github_hatasi_kurulum_baglantisini_korur(monkeypatch):
 
     assert sonuc["ok"] is False
     assert sonuc["guncelleme_var"] is False
-    assert sonuc["kurulum_url"].endswith("/releases/latest/download/Kantar-Servisi-Setup.exe")
+    assert sonuc["kurulum_url"].endswith("/main/downloads/Kantar-Servisi-Setup.exe")
 
 
-def test_henuz_release_yoksa_anlasilir_durum_doner(monkeypatch):
-    def release_yok(_request, timeout):
+def test_henuz_paket_yoksa_anlasilir_durum_doner(monkeypatch):
+    def paket_yok(_request, timeout):
         raise urllib.error.HTTPError("https://example.test", 404, "Not Found", {}, None)
 
-    monkeypatch.setattr(updates.urllib.request, "urlopen", release_yok)
+    monkeypatch.setattr(updates.urllib.request, "urlopen", paket_yok)
 
     sonuc = updates.son_surumu_kontrol_et()
 
     assert sonuc["ok"] is False
-    assert sonuc["release_yok"] is True
-    assert "Henuz GitHub" in sonuc["mesaj"]
+    assert sonuc["paket_yok"] is True
+    assert "yerel Windows paketi" in sonuc["mesaj"]
 
 
-def test_github_surum_sonucu_onbellekten_doner(monkeypatch):
+def test_github_manifest_sonucu_onbellekten_doner(monkeypatch):
     cagri_sayisi = {"deger": 0}
-    veri = {"tag_name": "v1.0.0", "assets": []}
+    veri = {
+        "version": "1.0.0",
+        "installer": "Kantar-Servisi-Setup.exe",
+        "sha256": "b" * 64,
+    }
 
     def cevap_ver(_request, timeout):
         cagri_sayisi["deger"] += 1
@@ -92,8 +92,12 @@ def test_github_surum_sonucu_onbellekten_doner(monkeypatch):
     assert cagri_sayisi["deger"] == 2
 
 
-def test_bozuk_asset_listesi_sistem_sayfasini_dusurmez(monkeypatch):
-    veri = {"tag_name": "v1.0.0", "assets": {"name": "gecersiz"}}
+def test_bozuk_manifest_sistem_sayfasini_dusurmez(monkeypatch):
+    veri = {
+        "version": "1.0.0",
+        "installer": "baska-dosya.exe",
+        "sha256": "gecersiz",
+    }
     monkeypatch.setattr(
         updates.urllib.request,
         "urlopen",
@@ -102,5 +106,24 @@ def test_bozuk_asset_listesi_sistem_sayfasini_dusurmez(monkeypatch):
 
     sonuc = updates.son_surumu_kontrol_et()
 
-    assert sonuc["ok"] is True
-    assert sonuc["kurulum_url"].endswith("/releases/latest/download/Kantar-Servisi-Setup.exe")
+    assert sonuc["ok"] is False
+    assert sonuc["kurulum_url"].endswith("/main/downloads/Kantar-Servisi-Setup.exe")
+
+
+def test_manifest_keyfi_indirme_adresi_belirleyemez(monkeypatch):
+    veri = {
+        "version": "1.1.0",
+        "installer": "Kantar-Servisi-Setup.exe",
+        "installer_url": "https://example.test/zararli.exe",
+        "sha256": "c" * 64,
+    }
+    monkeypatch.setattr(
+        updates.urllib.request,
+        "urlopen",
+        lambda _request, timeout: FakeResponse(json.dumps(veri).encode("utf-8")),
+    )
+
+    sonuc = updates.son_surumu_kontrol_et()
+
+    assert "raw.githubusercontent.com/beyazitkolemen/kantar-servisi" in sonuc["kurulum_url"]
+    assert "example.test" not in sonuc["kurulum_url"]

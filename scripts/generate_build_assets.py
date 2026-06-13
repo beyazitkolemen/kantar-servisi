@@ -35,6 +35,32 @@ def generate_icon():
     )
 
 
+def generate_installer_images():
+    BUILD_DIR.mkdir(parents=True, exist_ok=True)
+    buyuk = Image.new("RGB", (164, 314), (15, 23, 42))
+    draw = ImageDraw.Draw(buyuk)
+    draw.rounded_rectangle((18, 26, 146, 154), radius=28, fill=(37, 99, 235))
+    draw.rounded_rectangle((45, 55, 119, 82), radius=8, fill=(239, 246, 255))
+    draw.rectangle((54, 98, 110, 132), fill=(255, 255, 255))
+    draw.rectangle((65, 106, 72, 124), fill=(37, 99, 235))
+    draw.rectangle((78, 102, 85, 124), fill=(37, 99, 235))
+    draw.rectangle((91, 111, 98, 124), fill=(37, 99, 235))
+    draw.rectangle((18, 176, 146, 179), fill=(30, 41, 59))
+    draw.text((22, 198), "KANTAR", fill=(255, 255, 255))
+    draw.text((22, 218), "SERVISI", fill=(147, 197, 253))
+    draw.text((22, 274), "LISDEP", fill=(148, 163, 184))
+    buyuk.save(BUILD_DIR / "wizard-large.bmp")
+
+    kucuk = Image.new("RGB", (55, 55), (37, 99, 235))
+    draw = ImageDraw.Draw(kucuk)
+    draw.rounded_rectangle((6, 7, 49, 23), radius=5, fill=(239, 246, 255))
+    draw.rectangle((12, 29, 43, 47), fill=(255, 255, 255))
+    draw.rectangle((18, 34, 22, 43), fill=(37, 99, 235))
+    draw.rectangle((26, 31, 30, 43), fill=(37, 99, 235))
+    draw.rectangle((34, 36, 38, 43), fill=(37, 99, 235))
+    kucuk.save(BUILD_DIR / "wizard-small.bmp")
+
+
 def generate_version_info():
     surum = version_tuple()
     metin = """VSVersionInfo(
@@ -73,5 +99,6 @@ def generate_version_info():
 
 if __name__ == "__main__":
     generate_icon()
+    generate_installer_images()
     generate_version_info()
     print("Windows build varliklari olusturuldu: %s" % BUILD_DIR)

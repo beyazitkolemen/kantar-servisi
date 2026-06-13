@@ -1,0 +1,21 @@
+FROM debian:bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        binutils-mingw-w64-x86-64 \
+        ca-certificates \
+        file \
+        gcc-mingw-w64-x86-64 \
+        nsis \
+        python3 \
+        python3-pip \
+        python3-venv \
+        unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m venv /opt/kantar-build \
+    && /opt/kantar-build/bin/python -m pip install --upgrade pip
+
+ENV PATH="/opt/kantar-build/bin:${PATH}"
+WORKDIR /workspace
+ENTRYPOINT ["python", "scripts/build_windows_local.py", "--inside-container"]

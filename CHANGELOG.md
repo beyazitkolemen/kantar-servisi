@@ -9,16 +9,22 @@
 - Ayni COM portuna gelen eszamanli okumalar siraya alindi.
 - Negatif agirlik degerleri desteklendi.
 - Log yazma ve rotasyon islemleri eszamanli istekler icin guvenli hale getirildi.
-- GitHub surum kontrolune onbellek ve elle yenileme eklendi.
+- GitHub paket manifesti kontrolune onbellek ve elle yenileme eklendi.
 - Serial ve log ekranlarindaki JavaScript kodlari harici statik dosyalara tasindi.
 - Test kapsami ayar, guvenlik, API, onbellek ve eszamanlilik senaryolariyla genisletildi.
+- Windows sistem tepsisine canli servis durumu ve ayri panel kisayollari eklendi.
+- Asenkron servis yeniden baslatma ve beklenmedik kapanmada otomatik toparlanma eklendi.
+- Surum, dosya yollari, COM portlari ve profil ayarlarini iceren tanilama raporu eklendi.
+- NSIS kurulumu markali gorseller, App Paths kaydi ve profesyonel Baslat menusu kisayollariyla gelistirildi.
+- Paketlenmis EXE ile sessiz kurulum/kaldirma akisini dogrulayan kapsamli Windows smoke testleri eklendi.
+- GitHub Actions ve Releases bagimliligi kaldirildi; Windows kurulumu yerelde uretilip `downloads/` klasorunde dogrudan depoya eklenir hale getirildi.
+- Apple Silicon, macOS ve Linux uzerinde gercek Windows x64 EXE uretebilen Docker, MinGW ve NSIS tabanli yerel build zinciri eklendi.
 
 ## 1.0.0
 
 - Windows sistem tepsisi uygulamasi eklendi.
-- Python ve `.bat` gerektirmeyen PyInstaller paketi eklendi.
-- Kullanici bazli Inno Setup kurulum dosyasi eklendi.
-- GitHub Actions ile otomatik Windows Release akisi eklendi.
-- GitHub surum kontrolu ve sabit son kurulum indirme adresi eklendi.
+- Python ve `.bat` gerektirmeyen Windows paketi eklendi.
+- Kullanici bazli Windows kurulum dosyasi eklendi.
+- GitHub uzerindeki hazir kurulum dosyasi icin sabit indirme adresi eklendi.
 - Ayar ve log dosyalari `%LOCALAPPDATA%` altina tasindi.
 - Web arayuzu icin cevrimdisi CSS paketi eklendi.

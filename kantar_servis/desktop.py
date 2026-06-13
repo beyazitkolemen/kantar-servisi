@@ -14,7 +14,7 @@ from pathlib import Path
 
 from . import __version__
 from .config import (
-    GITHUB_RELEASES_URL,
+    GITHUB_DOWNLOADS_URL,
     PROFILLER,
     UYGULAMA_ADI,
     ayar_db_yolu,
@@ -206,16 +206,19 @@ class MasaustuUygulamasi:
 
     def servis_hazir_mi(self, timeout=SERVIS_BASLATMA_ZAMAN_ASIMI):
         son = time.monotonic() + timeout
+        servis_url = self.servis_url()
         while time.monotonic() < son:
             if self.sunucu is not None and self.sunucu.poll() is not None:
                 return False
-            if servis_saglik_bilgisi(self.servis_url()) is not None:
+            if servis_saglik_bilgisi(servis_url) is not None:
                 return True
             time.sleep(0.25)
         return False
 
     def sunucuyu_baslat(self):
         with self._yasam_dongusu_kilidi:
+            if self._kapanis.is_set():
+                return False
             if self.sunucu is not None and self.sunucu.poll() is None:
                 return True
             self.durum_guncelle(DURUM_BASLATILIYOR)
@@ -291,8 +294,8 @@ class MasaustuUygulamasi:
         os.makedirs(klasor, exist_ok=True)
         yerel_dosyayi_ac(klasor)
 
-    def surumleri_ac(self, _ikon=None, _menu=None):
-        webbrowser.open_new_tab(GITHUB_RELEASES_URL)
+    def indirmeleri_ac(self, _ikon=None, _menu=None):
+        webbrowser.open_new_tab(GITHUB_DOWNLOADS_URL)
 
     def tanilama_raporunu_ac(self, _ikon=None, _menu=None):
         try:
@@ -303,14 +306,16 @@ class MasaustuUygulamasi:
             mesaj_goster(UYGULAMA_ADI, "Tanilama raporu olusturulamadi. Log dosyasini kontrol edin.", hata=True)
 
     def sunucuyu_yeniden_baslat(self, _ikon=None, _menu=None):
-        if self._yeniden_baslatiliyor.is_set():
+        if self._kapanis.is_set() or self._yeniden_baslatiliyor.is_set():
             return
+        self._yeniden_baslatiliyor.set()
 
         def yeniden_baslat():
-            self._yeniden_baslatiliyor.set()
             self.durum_guncelle(DURUM_YENIDEN_BASLATILIYOR)
             try:
                 self.sunucuyu_durdur()
+                if self._kapanis.is_set():
+                    return
                 if self.sunucuyu_baslat():
                     self.bildirim_goster("Yerel kantar servisi yeniden baslatildi.")
                 else:
@@ -395,7 +400,7 @@ class MasaustuUygulamasi:
             pystray.MenuItem("Servisi Yeniden Baslat", self.sunucuyu_yeniden_baslat),
             pystray.MenuItem("Log Klasorunu Ac", self.log_klasorunu_ac),
             pystray.MenuItem("Tanilama Raporu Olustur", self.tanilama_raporunu_ac),
-            pystray.MenuItem("GitHub Surumleri", self.surumleri_ac),
+            pystray.MenuItem("GitHub Indirme Dosyalari", self.indirmeleri_ac),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Cikis", self.cikis),
         )

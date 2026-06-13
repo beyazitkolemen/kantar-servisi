@@ -7,13 +7,17 @@ import urllib.error
 import urllib.request
 
 from . import __version__
-from .config import GITHUB_LATEST_INSTALLER_URL, GITHUB_RELEASES_URL, GITHUB_REPO
+from .config import (
+    GITHUB_DOWNLOADS_URL,
+    GITHUB_LATEST_INSTALLER_URL,
+    GITHUB_UPDATE_MANIFEST_URL,
+)
 
-GITHUB_LATEST_RELEASE_API = "https://api.github.com/repos/%s/releases/latest" % GITHUB_REPO
 SURUM_DESENI = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$")
+SHA256_DESENI = re.compile(r"^[0-9a-f]{64}$")
 GUNCELLEME_ONBELLEK_SANIYE = 15 * 60
 GUNCELLEME_HATA_ONBELLEK_SANIYE = 60
-MAKSIMUM_CEVAP_BYTE = 1024 * 1024
+MAKSIMUM_CEVAP_BYTE = 16 * 1024
 _ONBELLEK_KILIDI = threading.Lock()
 _ONBELLEK = {"zaman": 0.0, "sonuc": None}
 
@@ -33,88 +37,67 @@ def daha_yeni_surum_var(guncel_surum, son_surum):
     return son > guncel
 
 
-def _kurulum_adresi(release):
-    assets = release.get("assets")
-    if not isinstance(assets, list):
-        return GITHUB_LATEST_INSTALLER_URL
-    for asset in assets:
-        if isinstance(asset, dict) and asset.get("name") == "Kantar-Servisi-Setup.exe":
-            return asset.get("browser_download_url") or GITHUB_LATEST_INSTALLER_URL
-    return GITHUB_LATEST_INSTALLER_URL
-
-
 def guncelleme_onbellegini_temizle():
     with _ONBELLEK_KILIDI:
         _ONBELLEK["zaman"] = 0.0
         _ONBELLEK["sonuc"] = None
 
 
-def _github_surumunu_oku(timeout):
+def _hata_sonucu(mesaj, paket_yok=False):
+    return {
+        "ok": False,
+        "guncel_surum": __version__,
+        "son_surum": None,
+        "guncelleme_var": False,
+        "paket_yok": paket_yok,
+        "kurulum_url": GITHUB_LATEST_INSTALLER_URL,
+        "surumler_url": GITHUB_DOWNLOADS_URL,
+        "sha256": "",
+        "mesaj": mesaj,
+    }
+
+
+def _github_manifestini_oku(timeout):
     istek = urllib.request.Request(
-        GITHUB_LATEST_RELEASE_API,
+        GITHUB_UPDATE_MANIFEST_URL,
         headers={
-            "Accept": "application/vnd.github+json",
+            "Accept": "application/json",
             "User-Agent": "Kantar-Servisi/%s" % __version__,
-            "X-GitHub-Api-Version": "2022-11-28",
         },
     )
     try:
         with urllib.request.urlopen(istek, timeout=timeout) as cevap:
             ham_cevap = cevap.read(MAKSIMUM_CEVAP_BYTE + 1)
             if len(ham_cevap) > MAKSIMUM_CEVAP_BYTE:
-                raise ValueError("GitHub cevabi beklenen boyutu asti.")
-            release = json.loads(ham_cevap.decode("utf-8"))
+                raise ValueError("Guncelleme manifesti beklenen boyutu asti.")
+            manifest = json.loads(ham_cevap.decode("utf-8"))
     except urllib.error.HTTPError as hata:
-        release_yok = hata.code == 404
-        return {
-            "ok": False,
-            "guncel_surum": __version__,
-            "son_surum": None,
-            "guncelleme_var": False,
-            "release_yok": release_yok,
-            "kurulum_url": GITHUB_LATEST_INSTALLER_URL,
-            "surumler_url": GITHUB_RELEASES_URL,
-            "mesaj": (
-                "Henuz GitHub uzerinde kararli bir surum yayinlanmadi."
-                if release_yok
-                else "GitHub surum bilgisi alinamadi: %s" % hata
-            ),
-        }
+        if hata.code == 404:
+            return _hata_sonucu("GitHub deposunda henuz yerel Windows paketi bulunmuyor.", paket_yok=True)
+        return _hata_sonucu("GitHub guncelleme bilgisi alinamadi: %s" % hata)
     except (urllib.error.URLError, OSError, ValueError) as hata:
-        return {
-            "ok": False,
-            "guncel_surum": __version__,
-            "son_surum": None,
-            "guncelleme_var": False,
-            "release_yok": False,
-            "kurulum_url": GITHUB_LATEST_INSTALLER_URL,
-            "surumler_url": GITHUB_RELEASES_URL,
-            "mesaj": "GitHub surum bilgisi alinamadi: %s" % hata,
-        }
+        return _hata_sonucu("GitHub guncelleme bilgisi alinamadi: %s" % hata)
 
-    if not isinstance(release, dict):
-        raise ValueError("GitHub surum cevabi gecersiz.")
-    son_surum = str(release.get("tag_name") or "").lstrip("v")
+    if not isinstance(manifest, dict):
+        raise ValueError("GitHub guncelleme manifesti gecersiz.")
+    son_surum = str(manifest.get("version") or "").lstrip("v")
     if surum_parcala(son_surum) is None:
-        return {
-            "ok": False,
-            "guncel_surum": __version__,
-            "son_surum": None,
-            "guncelleme_var": False,
-            "release_yok": False,
-            "kurulum_url": GITHUB_LATEST_INSTALLER_URL,
-            "surumler_url": GITHUB_RELEASES_URL,
-            "mesaj": "GitHub uzerindeki son surum etiketi gecersiz.",
-        }
+        return _hata_sonucu("GitHub guncelleme manifestindeki surum gecersiz.")
+    if manifest.get("installer") != "Kantar-Servisi-Setup.exe":
+        return _hata_sonucu("GitHub guncelleme manifestindeki kurulum dosyasi gecersiz.")
+    sha256 = str(manifest.get("sha256") or "").strip().lower()
+    if not SHA256_DESENI.match(sha256):
+        return _hata_sonucu("GitHub guncelleme manifestindeki SHA256 degeri gecersiz.")
     return {
         "ok": True,
         "guncel_surum": __version__,
         "son_surum": son_surum,
         "guncelleme_var": daha_yeni_surum_var(__version__, son_surum),
-        "release_yok": False,
-        "kurulum_url": _kurulum_adresi(release),
-        "surumler_url": release.get("html_url") or GITHUB_RELEASES_URL,
-        "yayin_tarihi": release.get("published_at") or "",
+        "paket_yok": False,
+        "kurulum_url": GITHUB_LATEST_INSTALLER_URL,
+        "surumler_url": GITHUB_DOWNLOADS_URL,
+        "yayin_tarihi": manifest.get("published_at") or "",
+        "sha256": sha256,
         "mesaj": "",
     }
 
@@ -129,18 +112,9 @@ def son_surumu_kontrol_et(timeout=4, zorla=False):
                 return dict(sonuc)
 
     try:
-        sonuc = _github_surumunu_oku(timeout)
+        sonuc = _github_manifestini_oku(timeout)
     except (OSError, TypeError, ValueError) as hata:
-        sonuc = {
-            "ok": False,
-            "guncel_surum": __version__,
-            "son_surum": None,
-            "guncelleme_var": False,
-            "release_yok": False,
-            "kurulum_url": GITHUB_LATEST_INSTALLER_URL,
-            "surumler_url": GITHUB_RELEASES_URL,
-            "mesaj": "GitHub surum bilgisi alinamadi: %s" % hata,
-        }
+        sonuc = _hata_sonucu("GitHub guncelleme bilgisi alinamadi: %s" % hata)
 
     with _ONBELLEK_KILIDI:
         _ONBELLEK["zaman"] = time.monotonic()

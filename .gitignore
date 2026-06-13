@@ -9,8 +9,9 @@ __pycache__/
 .venv/
 build/
 .build-assets/
+.windows-build/
 dist/
 node_modules/
-Kantar-Servisi-Setup.exe
-Kantar-Servisi-Portable.zip
-SHA256SUMS.txt
+/Kantar-Servisi-Setup.exe
+/Kantar-Servisi-Portable.zip
+/SHA256SUMS.txt

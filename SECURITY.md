@@ -2,7 +2,7 @@
 
 ## Desteklenen Surumler
 
-Guvenlik duzeltmeleri yalnizca GitHub Releases sayfasindaki son kararli Kantar Servisi surumune uygulanir.
+Guvenlik duzeltmeleri, depodaki `downloads/Kantar-Servisi-Setup.exe` dosyasinda yayinlanan son kararli Kantar Servisi surumune uygulanir.
 
 ## Guvenlik Bildirimi
 
