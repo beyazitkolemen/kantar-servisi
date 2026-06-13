@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="LİSDEP Kantar Servisi — yerel kantar okuma, seri port ayarları ve log yönetimi paneli.">
   <title>{% block title %}LİSDEP - Kantar Servisi{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
@@ -14,6 +15,7 @@
       {% block content %}{% endblock %}
     </section>
   </main>
+  <script src="{{ url_for('static', filename='ui.js') }}" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -1,8 +1,8 @@
-<form method="post" action="/ayarlar" class="space-y-5">
+<form method="post" action="/ayarlar" class="space-y-5" data-submit-loading>
   <input type="hidden" name="kantar" value="{{ kantar_id }}">
   <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
   <div>
-    <label class="{{ label_class }}" for="kantar-adi">Kantar Adi</label>
+    <label class="{{ label_class }}" for="kantar-adi">Kantar Adı</label>
     <input class="{{ input_class }}" id="kantar-adi" name="kantar_adi" type="text" maxlength="80" value="{{ kantar.ad }}" required>
   </div>
   <div class="grid gap-4 sm:grid-cols-2">
@@ -15,18 +15,18 @@
               <option value="{{ secenek.value }}" {% if secenek.selected %}selected{% endif %}>{{ secenek.label }}</option>
             {% endfor %}
           </select>
-          <p class="mt-1 text-xs text-slate-500">Aktif COM portlar otomatik listelenir. Port gorunmuyorsa donusturucu kabloyu ve surucuyu kontrol edin.</p>
+          <p class="mt-1 text-xs text-slate-500">Aktif COM portları otomatik listelenir. Port görünmüyorsa dönüştürücü kabloyu ve sürücüyü kontrol edin.</p>
         {% else %}
           <input class="{{ input_class }}" id="{{ alan.anahtar }}" name="{{ alan.anahtar }}" type="{{ alan.tip }}" value="{{ alan.deger }}" required{% for ad, deger in alan.ozellikler.items() %} {{ ad }}="{{ deger }}"{% endfor %}>
           {% if alan.global_ayar %}
-            <p class="mt-1 text-xs text-slate-500">Bu servis ayari eklenen tum kantarlar icin ortaktir.</p>
+            <p class="mt-1 text-xs text-slate-500">Bu servis ayarı eklenen tüm kantarlar için ortaktır.</p>
           {% endif %}
         {% endif %}
       </div>
     {% endfor %}
   </div>
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-    <p class="text-xs text-slate-500">Ayarlar yerel SQLite dosyasina otomatik kaydedilir.</p>
-    <button type="submit" class="inline-flex justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200">Ayarlari Kaydet</button>
+    <p class="text-xs text-slate-500">Ayarlar yerel SQLite dosyasına otomatik kaydedilir.</p>
+    <button type="submit" class="inline-flex justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200" data-yukleniyor-metin="Kaydediliyor…">Ayarları Kaydet</button>
   </div>
 </form>

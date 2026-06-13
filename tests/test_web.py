@@ -30,10 +30,10 @@ def test_saglik_ve_yonetim_sayfalari(monkeypatch, tmp_path):
     assert saglik.status_code == 200
     assert saglik.get_json()["surum"] == "1.1.0"
     assert ayarlar.status_code == 200
-    assert "Henuz kantar eklenmedi" in ayarlar.get_data(as_text=True)
+    assert "Henüz kantar eklenmedi" in ayarlar.get_data(as_text=True)
     assert saglik.get_json()["kantar_sayisi"] == 0
     assert sistem.status_code == 200
-    assert "Windows Kurulumunu Indir" in sistem.get_data(as_text=True)
+    assert "Windows Kurulumunu İndir" in sistem.get_data(as_text=True)
     assert css.status_code == 200
     assert ayarlar.headers["X-Frame-Options"] == "DENY"
     assert "script-src 'self'" in ayarlar.headers["Content-Security-Policy"]
@@ -165,7 +165,7 @@ def test_kantar_yokken_agirlik_endpointi_acik_hata_doner(monkeypatch, tmp_path):
     cevap = istemci.get("/api/v1/agirlik")
 
     assert cevap.status_code == 409
-    assert "Henuz kantar eklenmedi" in cevap.get_json()["hata"]
+    assert "Henüz kantar eklenmedi" in cevap.get_json()["hata"]
 
 
 def test_gecersiz_kantar_kimligi_baska_kantari_okumaz(monkeypatch, tmp_path):
@@ -182,12 +182,12 @@ def test_gecersiz_kantar_kimligi_baska_kantari_okumaz(monkeypatch, tmp_path):
 
     assert cevap.status_code == 404
     assert cevap.get_json()["kantar"] is None
-    assert cevap.get_json()["hata"] == "Istenen kantar bulunamadi."
+    assert cevap.get_json()["hata"] == "İstenen kantar bulunamadı."
 
     ayarlar = istemci.get("/ayarlar?kantar=kantar-gecersiz")
     assert ayarlar.status_code == 200
-    assert "Istenen kantar bulunamadi." in ayarlar.get_data(as_text=True)
-    assert "Bir kantar secin" in ayarlar.get_data(as_text=True)
+    assert "İstenen kantar bulunamadı." in ayarlar.get_data(as_text=True)
+    assert "Bir kantar seçin" in ayarlar.get_data(as_text=True)
 
 
 def test_uzak_istemci_reddedilir():

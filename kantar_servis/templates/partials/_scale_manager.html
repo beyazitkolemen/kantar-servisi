@@ -2,38 +2,39 @@
   <div class="flex flex-col gap-4">
     <div>
       <h2 class="text-base font-bold text-slate-900">Kantarlar</h2>
-      <p class="mt-1 text-xs text-slate-500">Ihtiyaciniz kadar kantar ekleyin. Her kantarin seri port ayarlari ayri tutulur.</p>
+      <p class="mt-1 text-xs text-slate-500">İhtiyacınız kadar kantar ekleyin. Her kantarın seri port ayarları ayrı tutulur.</p>
     </div>
 
     {% if kantarlar %}
       <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <form method="get" action="/ayarlar" class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-end">
+        <form method="get" action="/ayarlar" class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-end" id="kantar-secim-formu">
           <div class="min-w-0 flex-1">
-            <label class="{{ label_class }}" for="kantar-secimi">Secili Kantar</label>
-            <select id="kantar-secimi" name="kantar" class="{{ input_class }}">
+            <label class="{{ label_class }}" for="kantar-secimi">Seçili Kantar</label>
+            <select id="kantar-secimi" name="kantar" class="{{ input_class }}" aria-describedby="kantar-secim-yardim">
               {% for kayit in kantarlar %}
                 <option value="{{ kayit.id }}" {% if kayit.id == kantar_id %}selected{% endif %}>{{ kayit.ad }}</option>
               {% endfor %}
             </select>
+            <p id="kantar-secim-yardim" class="mt-1 text-xs text-slate-500">Listeden seçim yaptığınızda kantar ayarları otomatik açılır.</p>
           </div>
-          <button type="submit" class="inline-flex justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700">Ac</button>
+          <button type="submit" class="inline-flex justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700">Aç</button>
         </form>
         {% if kantar %}
-          <form method="post" action="/kantarlar/{{ kantar_id }}/sil" data-kantar-sil-form data-kantar-adi="{{ kantar.ad }}">
+          <form method="post" action="/kantarlar/{{ kantar_id }}/sil" data-kantar-sil-form data-kantar-adi="{{ kantar.ad }}" data-submit-loading>
             <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
-            <button type="submit" class="inline-flex w-full justify-center rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">Secili Kantari Sil</button>
+            <button type="submit" class="inline-flex w-full justify-center rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50" data-yukleniyor-metin="Siliniyor…">Seçili Kantarı Sil</button>
           </form>
         {% endif %}
       </div>
     {% endif %}
 
-    <form method="post" action="/kantarlar/ekle" class="flex flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-end">
+    <form method="post" action="/kantarlar/ekle" class="flex flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-end" data-submit-loading>
       <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
       <div class="min-w-0 flex-1">
-        <label class="{{ label_class }}" for="yeni-kantar-adi">Yeni Kantar Adi</label>
-        <input id="yeni-kantar-adi" name="kantar_adi" class="{{ input_class }}" type="text" maxlength="80" placeholder="Ornek: Giris Kantari" required>
+        <label class="{{ label_class }}" for="yeni-kantar-adi">Yeni Kantar Adı</label>
+        <input id="yeni-kantar-adi" name="kantar_adi" class="{{ input_class }}" type="text" maxlength="80" placeholder="Örnek: Giriş Kantarı" required>
       </div>
-      <button type="submit" class="inline-flex justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Kantar Ekle</button>
+      <button type="submit" class="inline-flex justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700" data-yukleniyor-metin="Ekleniyor…">Kantar Ekle</button>
     </form>
   </div>
 </section>

@@ -10,11 +10,11 @@
       {% else %}
         <section class="rounded-xl border border-dashed border-blue-300 bg-blue-50 p-8 text-center">
           {% if kantarlar %}
-            <h2 class="text-lg font-bold text-slate-900">Bir kantar secin</h2>
-            <p class="mt-2 text-sm text-slate-600">Yukaridaki listeden kantari secip Ac dugmesine basin.</p>
+            <h2 class="text-lg font-bold text-slate-900">Bir kantar seçin</h2>
+            <p class="mt-2 text-sm text-slate-600">Yukarıdaki listeden kantarı seçin; ayarlar otomatik açılır.</p>
           {% else %}
-            <h2 class="text-lg font-bold text-slate-900">Henuz kantar eklenmedi</h2>
-            <p class="mt-2 text-sm text-slate-600">Yukaridaki alana kantar adini yazip ekleyin. Seri port ve okuma ayarlari eklendikten sonra acilacak.</p>
+            <h2 class="text-lg font-bold text-slate-900">Henüz kantar eklenmedi</h2>
+            <p class="mt-2 text-sm text-slate-600">Yukarıdaki alana kantar adını yazıp ekleyin. Seri port ve okuma ayarları eklendikten sonra açılacak.</p>
           {% endif %}
         </section>
       {% endif %}
@@ -28,5 +28,5 @@
   </div>
 {% endblock %}
 {% block scripts %}
-  <script src="/static/kantarlar.js" defer></script>
+  <script src="{{ url_for('static', filename='kantarlar.js') }}" defer></script>
 {% endblock %}

@@ -1,4 +1,4 @@
-# -*- coding: cp1254 -*-
+# -*- coding: utf-8 -*-
 import json
 import hmac
 import ipaddress
@@ -83,8 +83,8 @@ def istek_kantar_degeri():
 
 def kantar_bulunamadi_cevabi():
     if istek_kantar_degeri():
-        return "Istenen kantar bulunamadi.", 404
-    return "Henuz kantar eklenmedi. Yonetim panelinden bir kantar ekleyin.", 409
+        return "İstenen kantar bulunamadı.", 404
+    return "Henüz kantar eklenmedi. Yönetim panelinden bir kantar ekleyin.", 409
 
 
 def istek_kantar_id():
@@ -146,13 +146,13 @@ def register_security(flask_app):
     @flask_app.before_request
     def yalnizca_yerel_istemci():
         if not istemci_yerel_mi(request.remote_addr):
-            return json_cevabi({"ok": False, "hata": "Bu servis yalnizca yerel bilgisayardan kullanilabilir."}, 403)
+            return json_cevabi({"ok": False, "hata": "Bu servis yalnızca yerel bilgisayardan kullanılabilir."}, 403)
         origin = request.headers.get("Origin", "")
         capraz_site = request.headers.get("Sec-Fetch-Site", "").lower() == "cross-site"
         if (origin or capraz_site) and not origin_izinli_mi(origin):
-            return json_cevabi({"ok": False, "hata": "Bu web kaynaginin yerel servise erisim izni yok."}, 403)
+            return json_cevabi({"ok": False, "hata": "Bu web kaynağının yerel servise erişim izni yok."}, 403)
         if capraz_site and origin_lisdep_mi(origin) and request.path not in ("/", "/api/v1/agirlik"):
-            return json_cevabi({"ok": False, "hata": "Bu endpoint web entegrasyonuna acik degil."}, 403)
+            return json_cevabi({"ok": False, "hata": "Bu endpoint web entegrasyonuna açık değil."}, 403)
         return None
 
     @flask_app.after_request
@@ -227,17 +227,17 @@ def ayar_formu_alanlari(ayarlar, portlar):
 
 def sorun_giderme_maddeleri():
     return [
-        {"baslik": "COM port listede gorunmuyor", "aciklama": "USB/RS232 donusturucuyu tekrar takin, Windows Aygit Yoneticisi'nde portu kontrol edin ve surucu kurulumunun tamamlandigindan emin olun."},
-        {"baslik": "Port kullanimda hatasi", "aciklama": "Ayni COM portu kullanan diger kantar programlarini kapatin. Gerekirse servisi kapatip tekrar baslatin."},
-        {"baslik": "SQLite ayari kaydedilemiyor", "aciklama": "Sistem sayfasindaki yerel veri klasorunun yazilabilir oldugunu kontrol edin ve uygulamayi yeniden baslatin."},
-        {"baslik": "Ayarlar sayfasi acilmiyor", "aciklama": "Kantar servisi calisiyor mu kontrol edin. Kantarlar tek panelden eklenir ve her kantarin ayri bir kimligi bulunur."},
-        {"baslik": "Program dosyasi eksik", "aciklama": "GitHub deposundaki downloads klasorunden son Windows kurulum dosyasini indirip uygulamayi yeniden kurun. Ayarlariniz korunur."},
+        {"baslik": "COM port listede görünmüyor", "aciklama": "USB/RS232 dönüştürücüyü tekrar takın, Windows Aygıt Yöneticisi'nde portu kontrol edin ve sürücü kurulumunun tamamlandığından emin olun."},
+        {"baslik": "Port kullanımda hatası", "aciklama": "Aynı COM portu kullanan diğer kantar programlarını kapatın. Gerekirse servisi kapatıp tekrar başlatın."},
+        {"baslik": "SQLite ayarı kaydedilemiyor", "aciklama": "Sistem sayfasındaki yerel veri klasörünün yazılabilir olduğunu kontrol edin ve uygulamayı yeniden başlatın."},
+        {"baslik": "Ayarlar sayfası açılmıyor", "aciklama": "Kantar servisi çalışıyor mu kontrol edin. Kantarlar tek panelden eklenir ve her kantarın ayrı bir kimliği bulunur."},
+        {"baslik": "Program dosyası eksik", "aciklama": "GitHub deposundaki downloads klasöründen son Windows kurulum dosyasını indirip uygulamayı yeniden kurun. Ayarlarınız korunur."},
     ]
 
 
 def ayar_formu_html(kantar, ayarlar, mesaj=None, hatalar=None):
     if render_template is None:
-        return "Kantar ayarlari sayfasi icin Flask render_template kullanilamadi. Flask paketini kontrol edin."
+        return "Kantar ayarları sayfası için Flask render_template kullanılamadı. Flask paketini kontrol edin."
     portlar = seri_portlari_listele()
     context = ortak_template_context("ayarlar", kantar)
     context.update({
@@ -288,9 +288,9 @@ def register_routes(flask_app):
             gunluge_yaz(mesaj)
             return {"ok": False, "kantar": kantar["id"], "profil": kantar["id"], "hata": mesaj}, 503
         except Exception as hata:
-            mesaj = KantarHatasi("Beklenmeyen bir hata olustu.", [
-                "Servis loglarini kontrol edin.",
-                "Kantar Servisi uygulamasini yeniden baslatin.",
+            mesaj = KantarHatasi("Beklenmeyen bir hata oluştu.", [
+                "Servis loglarını kontrol edin.",
+                "Kantar Servisi uygulamasını yeniden başlatın.",
             ], str(hata)).kullanici_mesaji()
             gunluge_yaz(mesaj)
             return {"ok": False, "kantar": kantar["id"], "profil": kantar["id"], "hata": mesaj}, 500
@@ -329,7 +329,7 @@ def register_routes(flask_app):
     @flask_app.route("/kantarlar/ekle", methods=["POST"])
     def kantar_ekle_sayfasi():
         if not csrf_gecerli_mi():
-            return json_cevabi({"ok": False, "hata": "Form guvenlik dogrulamasi basarisiz."}, 403)
+            return json_cevabi({"ok": False, "hata": "Form güvenlik doğrulaması başarısız."}, 403)
         try:
             kantar_id = kantar_ekle(request.form.get("kantar_adi"))
         except ValueError as hata:
@@ -342,7 +342,7 @@ def register_routes(flask_app):
     @flask_app.route("/kantarlar/<kantar_id>/sil", methods=["POST"])
     def kantar_sil_sayfasi(kantar_id):
         if not csrf_gecerli_mi():
-            return json_cevabi({"ok": False, "hata": "Form guvenlik dogrulamasi basarisiz."}, 403)
+            return json_cevabi({"ok": False, "hata": "Form güvenlik doğrulaması başarısız."}, 403)
         kantar_sil(kantar_id)
         return redirect("/ayarlar?mesaj=Kantar silindi")
 
@@ -351,15 +351,15 @@ def register_routes(flask_app):
         kantar = istek_kantari()
         kantar_id = kantar["id"] if kantar else ""
         mesaj = request.values.get("mesaj", "")
-        hatalar = ["Istenen kantar bulunamadi."] if istek_kantar_degeri() and not kantar else []
+        hatalar = ["İstenen kantar bulunamadı."] if istek_kantar_degeri() and not kantar else []
         if request.method == "POST":
             if not csrf_gecerli_mi():
                 return html_cevabi(
-                    ayar_formu_html(kantar, form_ayarlari_al(request.form), hatalar=["Form guvenlik dogrulamasi basarisiz. Sayfayi yenileyip tekrar deneyin."]),
+                    ayar_formu_html(kantar, form_ayarlari_al(request.form), hatalar=["Form güvenlik doğrulaması başarısız. Sayfayı yenileyip tekrar deneyin."]),
                     403,
                 )
             if not kantar:
-                return html_cevabi(ayar_formu_html(None, ayarlari_oku(), hatalar=["Once bir kantar ekleyin."]), 400)
+                return html_cevabi(ayar_formu_html(None, ayarlari_oku(), hatalar=["Önce bir kantar ekleyin."]), 400)
             form_ayarlari = form_ayarlari_al(request.form)
             try:
                 ayarlari_kaydet(kantar_id, form_ayarlari, request.form.get("kantar_adi"))
@@ -367,7 +367,7 @@ def register_routes(flask_app):
                 return html_cevabi(ayar_formu_html(kantar, form_ayarlari, hatalar=hata.hatalar), 400)
             except ValueError as hata:
                 return html_cevabi(ayar_formu_html(kantar, form_ayarlari, hatalar=[str(hata)]), 400)
-            mesaj = "Ayarlar kaydedildi. Servis host veya port degistiyse servisi yeniden baslatin."
+            mesaj = "Ayarlar kaydedildi. Servis host veya port değiştiyse servisi yeniden başlatın."
             kantar = kantar_sec(kantar_id)
         return html_cevabi(ayar_formu_html(kantar, ayarlari_oku(kantar_id), mesaj, hatalar))
 
@@ -443,14 +443,14 @@ def register_routes(flask_app):
 
         yol = log_dosya_yolu()
         if not os.path.isfile(yol):
-            return metin_cevabi("Log dosyasi bulunamadi.", 404)
+            return metin_cevabi("Log dosyası bulunamadı.", 404)
         with open(yol, "r", encoding="utf-8", errors="replace") as dosya:
             return dosya_indirme_cevabi(dosya.read(), "kantar-servis.log")
 
     @flask_app.route("/loglar/temizle", methods=["POST"])
     def loglar_temizle():
         if not csrf_gecerli_mi():
-            return json_cevabi({"ok": False, "hata": "Form guvenlik dogrulamasi basarisiz."}, 403)
+            return json_cevabi({"ok": False, "hata": "Form güvenlik doğrulaması başarısız."}, 403)
         silinen = loglari_temizle()
         gunluge_yaz("Log temizleme islemi tamamlandi. Silinen dosya sayisi: %s" % silinen)
         if redirect is None:

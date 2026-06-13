@@ -1,4 +1,4 @@
-# -*- coding: cp1254 -*-
+# -*- coding: utf-8 -*-
 import ipaddress
 import math
 import os
@@ -19,12 +19,12 @@ KANTAR_KIMLIK_DESENI = re.compile(r"^kantar-[0-9a-f]{32}$")
 
 AYAR_ALANLARI = [
     ("seri_port", "Seri Port", "text"),
-    ("seri_baud_hizi", "Baud Hizi", "number"),
-    ("seri_zaman_asimi", "Zaman Asimi", "text"),
+    ("seri_baud_hizi", "Baud Hızı", "number"),
+    ("seri_zaman_asimi", "Zaman Aşımı", "text"),
     ("seri_okuma_boyutu", "Okuma Boyutu", "number"),
-    ("baslangic_bitleri", "Baslangic Bitleri", "text"),
-    ("agirlik_baslangic_indeksi", "Agirlik Baslangic Indeksi", "number"),
-    ("agirlik_bitis_indeksi", "Agirlik Bitis Indeksi", "number"),
+    ("baslangic_bitleri", "Başlangıç Bitleri", "text"),
+    ("agirlik_baslangic_indeksi", "Ağırlık Başlangıç İndeksi", "number"),
+    ("agirlik_bitis_indeksi", "Ağırlık Bitiş İndeksi", "number"),
     ("servis_host", "Servis Host", "text"),
     ("servis_port", "Servis Port", "number"),
 ]
@@ -168,7 +168,7 @@ def _tam_sayi_dogrula(ayarlar, anahtar, etiket, en_az, en_cok, hatalar):
     try:
         deger = int(str(ayarlar.get(anahtar, "")).strip())
     except (TypeError, ValueError):
-        hatalar.append("%s tam sayi olmalidir." % etiket)
+        hatalar.append("%s tam sayı olmalıdır." % etiket)
         return None
     if deger < en_az or deger > en_cok:
         hatalar.append("%s %s ile %s arasinda olmalidir." % (etiket, en_az, en_cok))
@@ -181,7 +181,7 @@ def _ondalik_dogrula(ayarlar, anahtar, etiket, en_az, en_cok, hatalar):
     try:
         deger = float(ham_deger)
     except (TypeError, ValueError):
-        hatalar.append("%s sayisal bir deger olmalidir." % etiket)
+        hatalar.append("%s sayısal bir değer olmalıdır." % etiket)
         return None
     if not math.isfinite(deger) or deger < en_az or deger > en_cok:
         hatalar.append("%s %s ile %s arasinda olmalidir." % (etiket, en_az, en_cok))
@@ -195,16 +195,16 @@ def ayarlari_dogrula(ayarlar):
 
     seri_port = str(ayarlar.get("seri_port", "") or "").strip()
     if not seri_port:
-        hatalar.append("Seri Port bos birakilamaz.")
+        hatalar.append("Seri Port boş bırakılamaz.")
     elif len(seri_port) > 128 or any(ord(karakter) < 32 for karakter in seri_port):
-        hatalar.append("Seri Port gecersiz karakter iceriyor veya cok uzun.")
+        hatalar.append("Seri Port geçersiz karakter içeriyor veya çok uzun.")
     normalize["seri_port"] = seri_port
 
-    baud = _tam_sayi_dogrula(ayarlar, "seri_baud_hizi", "Baud Hizi", 1, 4000000, hatalar)
-    timeout = _ondalik_dogrula(ayarlar, "seri_zaman_asimi", "Zaman Asimi", 0.1, 60, hatalar)
+    baud = _tam_sayi_dogrula(ayarlar, "seri_baud_hizi", "Baud Hızı", 1, 4000000, hatalar)
+    timeout = _ondalik_dogrula(ayarlar, "seri_zaman_asimi", "Zaman Aşımı", 0.1, 60, hatalar)
     okuma_boyutu = _tam_sayi_dogrula(ayarlar, "seri_okuma_boyutu", "Okuma Boyutu", 1, 4096, hatalar)
-    baslangic = _tam_sayi_dogrula(ayarlar, "agirlik_baslangic_indeksi", "Agirlik Baslangic Indeksi", 0, 4095, hatalar)
-    bitis = _tam_sayi_dogrula(ayarlar, "agirlik_bitis_indeksi", "Agirlik Bitis Indeksi", 1, 4096, hatalar)
+    baslangic = _tam_sayi_dogrula(ayarlar, "agirlik_baslangic_indeksi", "Ağırlık Başlangıç İndeksi", 0, 4095, hatalar)
+    bitis = _tam_sayi_dogrula(ayarlar, "agirlik_bitis_indeksi", "Ağırlık Bitiş İndeksi", 1, 4096, hatalar)
     port = _tam_sayi_dogrula(ayarlar, "servis_port", "Servis Port", 1, 65535, hatalar)
 
     bitler = []
@@ -213,22 +213,22 @@ def ayarlari_dogrula(ayarlar):
         if not bit:
             continue
         if len(bit) != 1 or ord(bit) < 32:
-            hatalar.append("Baslangic Bitleri tek karakterlik, virgul ile ayrilmis degerler olmalidir.")
+            hatalar.append("Başlangıç Bitleri tek karakterlik, virgül ile ayrılmış değerler olmalıdır.")
             bitler = []
             break
         if bit not in bitler:
             bitler.append(bit)
-    if not bitler and not any("Baslangic Bitleri" in hata for hata in hatalar):
-        hatalar.append("En az bir Baslangic Biti girilmelidir.")
+    if not bitler and not any("Başlangıç Bitleri" in hata for hata in hatalar):
+        hatalar.append("En az bir Başlangıç Biti girilmelidir.")
 
     host = str(ayarlar.get("servis_host", "") or "").strip().lower()
     if not loopback_host_mu(host):
-        hatalar.append("Servis Host guvenlik nedeniyle yalnizca yerel makine adresi olabilir.")
+        hatalar.append("Servis Host güvenlik nedeniyle yalnızca yerel makine adresi olabilir.")
     elif host != "localhost":
         host = str(ipaddress.ip_address(host))
 
     if baslangic is not None and bitis is not None and bitis <= baslangic:
-        hatalar.append("Agirlik Bitis Indeksi, baslangic indeksinden buyuk olmalidir.")
+        hatalar.append("Ağırlık Bitiş İndeksi, başlangıç indeksinden büyük olmalıdır.")
 
     if hatalar:
         raise AyarDogrulamaHatasi(hatalar)

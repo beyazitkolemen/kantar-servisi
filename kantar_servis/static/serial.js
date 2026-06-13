@@ -12,6 +12,11 @@
   var agirlik = document.getElementById("agirlik");
   var zaman = document.getElementById("zaman");
   var portSelect = document.getElementById("port");
+  var baslatButon = document.getElementById("baslat");
+  var tekOkuButon = document.getElementById("tek-oku");
+  var durdurButon = document.getElementById("durdur");
+  var kopyalaButon = document.getElementById("kopyala");
+  var portYenileButon = document.getElementById("port-yenile");
 
   function maksimumSatir() {
     var deger = parseInt(document.getElementById("maksimum-satir").value || "250", 10);
@@ -48,6 +53,34 @@
       "&port=" + encodeURIComponent(portSelect.value);
   }
 
+  function butonlariKilitle(kilitli) {
+    if (baslatButon) {
+      baslatButon.disabled = kilitli && izlemeAktif;
+    }
+    if (tekOkuButon) {
+      tekOkuButon.disabled = kilitli;
+      tekOkuButon.setAttribute("aria-busy", kilitli ? "true" : "false");
+    }
+    if (portYenileButon) {
+      portYenileButon.disabled = kilitli;
+    }
+    if (akis) {
+      akis.setAttribute("aria-busy", kilitli ? "true" : "false");
+    }
+  }
+
+  function izlemeDurumunuGuncelle() {
+    if (!baslatButon) {
+      return;
+    }
+    baslatButon.setAttribute("aria-pressed", izlemeAktif ? "true" : "false");
+    if (izlemeAktif) {
+      baslatButon.classList.add("ring-2", "ring-emerald-300");
+    } else {
+      baslatButon.classList.remove("ring-2", "ring-emerald-300");
+    }
+  }
+
   function sonrakiOkumayiPlanla() {
     if (izlemeAktif) {
       timer = window.setTimeout(oku, yenilemeAraligi());
@@ -59,6 +92,11 @@
       return;
     }
     istekSuruyor = true;
+    butonlariKilitle(true);
+    if (!izlemeAktif) {
+      durum.textContent = "Okunuyor…";
+      durumRengi("bekle");
+    }
     fetch("/serial/veri?" + urlParametreleri(), { cache: "no-store" })
       .then(function (response) {
         return response.json();
@@ -67,7 +105,7 @@
         zaman.textContent = data.zaman || "-";
         if (data.ok) {
           okumaSayisi += 1;
-          durum.textContent = data.uyari ? "Okundu / Uyari" : "Okundu";
+          durum.textContent = data.uyari ? "Okundu / Uyarı" : "Okundu";
           durumRengi(data.uyari ? "bekle" : "ok");
           agirlik.textContent = data.agirlik || "-";
           document.getElementById("port-baud").textContent = (data.seri_port || "-") + " / " + (data.baud_hizi || "-");
@@ -96,18 +134,26 @@
       .catch(function (error) {
         hataSayisi += 1;
         document.getElementById("hata-sayisi").textContent = hataSayisi;
-        durum.textContent = "Baglanti hatasi";
+        durum.textContent = "Bağlantı hatası";
         durumRengi("hata");
         satirYaz("HATA: " + error);
       })
       .finally(function () {
         istekSuruyor = false;
+        butonlariKilitle(false);
+        if (izlemeAktif) {
+          durum.textContent = "İzleniyor";
+          durumRengi("bekle");
+        }
         sonrakiOkumayiPlanla();
       });
   }
 
   function portlariYenile() {
-    document.getElementById("port-durum").textContent = "Portlar yenileniyor...";
+    document.getElementById("port-durum").textContent = "Portlar yenileniyor…";
+    if (portYenileButon) {
+      portYenileButon.disabled = true;
+    }
     fetch("/serial/portlar?" + urlParametreleri(), { cache: "no-store" })
       .then(function (response) { return response.json(); })
       .then(function (data) {
@@ -123,7 +169,12 @@
         document.getElementById("port-durum").textContent = "Son yenileme: " + (data.zaman || "-");
       })
       .catch(function (error) {
-        document.getElementById("port-durum").textContent = "Portlar okunamadi: " + error;
+        document.getElementById("port-durum").textContent = "Portlar okunamadı: " + error;
+      })
+      .finally(function () {
+        if (portYenileButon) {
+          portYenileButon.disabled = false;
+        }
       });
   }
 
@@ -133,19 +184,21 @@
       window.clearTimeout(timer);
     }
     timer = null;
+    izlemeDurumunuGuncelle();
   }
 
   function baslat() {
     durdur();
     izlemeAktif = true;
-    durum.textContent = "Izleniyor";
+    durum.textContent = "İzleniyor";
     durumRengi("bekle");
+    izlemeDurumunuGuncelle();
     oku();
   }
 
-  document.getElementById("baslat").addEventListener("click", baslat);
-  document.getElementById("tek-oku").addEventListener("click", oku);
-  document.getElementById("durdur").addEventListener("click", function () {
+  baslatButon.addEventListener("click", baslat);
+  tekOkuButon.addEventListener("click", oku);
+  durdurButon.addEventListener("click", function () {
     durdur();
     durum.textContent = "Durduruldu";
     durumRengi("bekle");
@@ -153,12 +206,20 @@
   document.getElementById("temizle").addEventListener("click", function () {
     satirlar = [];
     panelGuncelle();
-  });
-  document.getElementById("kopyala").addEventListener("click", function () {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(akis.textContent || "");
+    if (!izlemeAktif && satirlar.length === 0) {
+      akis.textContent = "Akış temizlendi. Başlat veya Tek Oku ile yeniden izlemeye başlayın.";
     }
   });
-  document.getElementById("port-yenile").addEventListener("click", portlariYenile);
+  kopyalaButon.addEventListener("click", function () {
+    var metin = akis.textContent || "";
+    if (window.kantarUi && window.kantarUi.panoyaKopyala) {
+      window.kantarUi.panoyaKopyala(metin, kopyalaButon);
+      return;
+    }
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(metin);
+    }
+  });
+  portYenileButon.addEventListener("click", portlariYenile);
   portlariYenile();
-})();
+}());
