@@ -1,4 +1,4 @@
 -r requirements.txt
 build>=1.2,<2
-pyinstaller>=6.10,<7
+pyinstaller>=6.20.0,<7
 pytest>=8,<10
